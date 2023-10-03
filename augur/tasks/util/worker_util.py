@@ -16,7 +16,7 @@ def create_grouped_task_load(*args,processes=8,dataList=[],task=None):
     
     if not dataList or not task:
         raise AssertionError
-    
+
     print(f"Splitting {len(dataList)} items")
     #numpyData = np.array(list(dataList))
     listsSplitForProcesses = np.array_split(list(dataList), processes)
@@ -26,9 +26,7 @@ def create_grouped_task_load(*args,processes=8,dataList=[],task=None):
     #print(args)
     task_list = [task.si(data.tolist(), *args) for data in listsSplitForProcesses]
 
-    jobs = group(task_list)
-
-    return jobs
+    return group(task_list)
 
 
 
@@ -51,7 +49,7 @@ def remove_duplicate_dicts(data: List[dict]) -> List[dict]:
     Note:
         The dicts must be perfectly the same meaning the field and data must be exactly the same to be removed
     """
-    return [dict(y) for y in set(tuple(x.items()) for x in data)]
+    return [dict(y) for y in {tuple(x.items()) for x in data}]
 
 def remove_duplicates_by_uniques(data, uniques):
 
@@ -90,15 +88,11 @@ def remove_duplicate_naturals(data, natural_keys):
 
     for record in data:
 
-        #Get the unique part of the data.
-        unique_part = {}
-        for key in natural_keys:
-            unique_part[key] = record[key]
-        
+        unique_part = {key: record[key] for key in natural_keys}
         if unique_part not in unique_values:
             unique_values.append(unique_part)
             new_data.append(record)
-    
+
     #print(new_data)
     return new_data
 
@@ -114,15 +108,11 @@ def calculate_date_weight_from_timestamps(added,last_collection,domain_start_day
         return date_weight_factor(delta.days)
     else:
         delta = datetime.now() - last_collection
-        
+
         factor = date_weight_factor(delta.days,domain_shift=domain_start_days)
 
         #If the repo is older than thirty days, start to decrease its weight.
-        if delta.days >= domain_start_days:
-            return factor
-        else:
-            #Else increase its weight
-            return -1 * factor
+        return factor if delta.days >= domain_start_days else -1 * factor
 
 def parse_json_from_subprocess_call(logger, subprocess_arr, cwd=None):
     logger.info(f"running subprocess {subprocess_arr[0]}")

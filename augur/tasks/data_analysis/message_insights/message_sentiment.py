@@ -48,15 +48,11 @@ def replace_all(text, dic):
 stemmer = SnowballStemmer("english")
 
 def stem_tokens(tokens):
-    stemmed = []
-    for item in tokens:
-        stemmed.append(stemmer.stem(item))
-    return stemmed
+    return [stemmer.stem(item) for item in tokens]
 
 def tokenize_and_stem(text):
     tokens = nltk.word_tokenize(text)
-    stems = stem_tokens(tokens)
-    return stems
+    return stem_tokens(tokens)
 
 
 
@@ -150,17 +146,12 @@ def negated(input_words):
     # Determine if input contains negation words
     neg_words = []
     neg_words.extend(negation_words)
-    for word in neg_words:
-        if word in input_words:
-            return True
-    return False
+    return any(word in input_words for word in neg_words)
 
 def prepend_not(word):
-    if word in emoticon_words:
+    if word in emoticon_words or word in negation_words:
         return word
-    elif word in negation_words:
-        return word
-    return "NOT_"+word
+    return f"NOT_{word}"
 
 
 def handle_negation(comments):
@@ -168,16 +159,16 @@ def handle_negation(comments):
     modified_st = []
     for st in sentences:
         allwords = nltk.word_tokenize(st)
-        modified_words = []
         if negated(allwords):
             part_of_speech = nltk.tag.pos_tag(allwords, tagset='universal')
             chunked = chunk_parser.parse(part_of_speech)
+            modified_words = []
             for n in chunked:
                 if isinstance(n, nltk.tree.Tree):
                     words = [pair[0] for pair in n.leaves()]
                     if n.label() == 'NegP' and negated(words):
-                        for i, (word, pos) in enumerate(n.leaves()):
-                            if (pos == "ADV" or pos == "ADJ" or pos == "VERB") and (word != "not"):
+                        for word, pos in n.leaves():
+                            if pos in ["ADV", "ADJ", "VERB"] and word != "not":
                                 modified_words.append(prepend_not(word))
                             else:
                                 modified_words.append(word)
@@ -277,7 +268,9 @@ class SentiCR:
         workbook = open_workbook(os.path.join(train_path,"custom_dataset.xls"))
         sheet = workbook.sheet_by_index(0)
         oracle_data = []
-        self.logger.info(f"Reading training data from 'train_data/custom_dataset.xls'...")
+        self.logger.info(
+            "Reading training data from 'train_data/custom_dataset.xls'..."
+        )
         for cell_num in range(0, sheet.nrows):
             comments = SentimentData(sheet.cell(
                 cell_num, 0).value, sheet.cell(cell_num, 1).value)
@@ -296,9 +289,7 @@ class SentiCR:
             sentiment_class = sentiment_class[0]
         else:
             sentiment_score = score*sentiment_class
-        if label:
-            return (sentiment_class, sentiment_score)
-        return sentiment_score
+        return (sentiment_class, sentiment_score) if label else sentiment_score
     
 # Function to get sentiment score
 
@@ -319,6 +310,4 @@ def get_senti_score(df, col, models_dir, label=False, logger=logging):
         i+=1
     scores = np.array(scores)
     labels = np.array(labels)
-    if label:
-        return (labels,scores)
-    return scores
+    return (labels, scores) if label else scores

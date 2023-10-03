@@ -21,9 +21,7 @@ def github_api_key_headers():
 
         api_key = session.query(Config).filter(Config.section_name == "Keys", Config.setting_name == "github_api_key").one().value
 
-        headers = {"Authorization": f'token {api_key}'}
-
-        yield headers
+        yield {"Authorization": f'token {api_key}'}
 
 
 @pytest.mark.parametrize("pr_number", [1, 2, 26])
@@ -106,7 +104,7 @@ def test_extract_data_from_pr(github_api_key_headers, pr_number):
 
 def test_extract_data_from_pr_list(github_api_key_headers):
 
-    base_url = f"https://api.github.com/repos/operate-first/blueprint/pulls/" 
+    base_url = "https://api.github.com/repos/operate-first/blueprint/pulls/" 
 
     contributor_count = 0
     metadata_count = 0
@@ -141,7 +139,7 @@ def test_extract_data_from_pr_list(github_api_key_headers):
                 if data[key]:
 
                     metadata_count += 1
-                
+
                     # if login exists on metadata then add count to contributors
                     try:
                         data[key]["user"]["login"]
@@ -179,7 +177,7 @@ def test_extract_data_from_pr_list(github_api_key_headers):
     assert len(pr_numbers) == len(numbers)
     assert contributor_count == len(contributors)
 
-    
+
 
     urls = [base_url + str(pr_number) for pr_number in numbers]
 
@@ -279,9 +277,10 @@ def test_insert_pr_contributors(github_api_key_headers, test_db_session, pr_numb
 
                 connection.execute(f"DELETE FROM augur_data.contributors WHERE cntrb_id!='{not_provided_cntrb_id}' AND cntrb_id!='{nan_cntrb_id}';")
 
-repos = []
-repos.append({"owner": "chaoss", "repo": "augur"})
-repos.append({"owner": "operate-first", "repo": "blueprint"})
+repos = [
+    {"owner": "chaoss", "repo": "augur"},
+    {"owner": "operate-first", "repo": "blueprint"},
+]
 @pytest.mark.parametrize("repo", repos)
 def test_insert_prs(github_api_key_headers, test_db_session, repo):
 
@@ -324,19 +323,21 @@ def test_insert_prs(github_api_key_headers, test_db_session, repo):
                         connection.execute(query, **contributor)
 
                         contributors_inserted.append(pr["user"]["login"])
-                
+
                 pr["cntrb_id"] = contributor["cntrb_id"]
-                
+
                 prs_insert.append(
                         extract_needed_pr_data(pr, repo_id, tool_source, tool_version)
                 )
-               
+
 
             return_data = insert_prs(prs_insert, test_db_session, "Insert contrbibutors test")
 
             with test_db_session.engine.connect() as connection:
 
-                result = connection.execute(f"SELECT * FROM augur_data.pull_requests;").fetchall()
+                result = connection.execute(
+                    "SELECT * FROM augur_data.pull_requests;"
+                ).fetchall()
 
                 assert result is not None
                 assert len(result) == len(prs) == len(return_data)
@@ -351,9 +352,9 @@ def test_insert_prs(github_api_key_headers, test_db_session, repo):
 
     finally:
 
-         with test_db_session.engine.connect() as connection:
+        with test_db_session.engine.connect() as connection:
 
-            connection.execute(f"DELETE FROM augur_data.pull_requests;")
+            connection.execute("DELETE FROM augur_data.pull_requests;")
             connection.execute("""DELETE FROM "augur_data"."repo";
                                 DELETE FROM "augur_data"."repo_groups";
                                 """)
@@ -374,8 +375,8 @@ def test_map_other_pr_data_to_pr(github_api_key_headers):
 
         url = base_url + str(number)
 
-        pr_return_data.append({f'pull_request_id': number, 'pr_url': url})
-        
+        pr_return_data.append({'pull_request_id': number, 'pr_url': url})
+
         with httpx.Client() as client:
 
             pr = client.request(method="GET", url=url, headers=github_api_key_headers, timeout=180).json()
@@ -410,7 +411,7 @@ def test_map_other_pr_data_to_pr(github_api_key_headers):
         for label in related_labels:
 
             assert label["id"] in [pr_label["id"] for pr_label in pr_labels]
-    
+
         for assignee in related_assignees:
 
             assert assignee["id"] in [pr_assignee["id"] for pr_assignee in pr_assignees]

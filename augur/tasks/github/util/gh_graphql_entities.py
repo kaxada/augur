@@ -81,7 +81,7 @@ def request_graphql_dict(key_auth, logger, url,query,variables={},timeout_wait=1
                 f"User data request for enriching contributor data failed with {attempts} attempts! Trying again...")
             time.sleep(timeout_wait)
             continue
-        
+
         if not result:
             attempts += 1
             continue
@@ -90,7 +90,7 @@ def request_graphql_dict(key_auth, logger, url,query,variables={},timeout_wait=1
             response_data = result.json()
         except:
             response_data = json.loads(json.dumps(result.text))
-        
+
         #self.logger.info(f"api return: {response_data}")
 
         if type(response_data) == dict:
@@ -100,7 +100,7 @@ def request_graphql_dict(key_auth, logger, url,query,variables={},timeout_wait=1
                 attempts += 1
                 logger.info(f"err: {err}")
                 continue
-            
+
             success = True
             break
         elif type(response_data) == list:
@@ -123,17 +123,14 @@ def request_graphql_dict(key_auth, logger, url,query,variables={},timeout_wait=1
                     #If we get an error message that's not None
                     if err and err != GithubApiResult.SUCCESS:
                         continue
-                    
+
                     success = True
                     break
                 except:
                     pass
         attempts += 1
 
-    if not success:
-        return None
-
-    return response_data
+    return None if not success else response_data
 
 
 
@@ -186,7 +183,7 @@ class GraphQlPageCollection(collections.abc.Sequence):
                     f"User data request for enriching contributor data failed with {attempts} attempts! Trying again...")
                 time.sleep(timeout_wait)
                 continue
-            
+
             if not result:
                 attempts += 1
                 continue
@@ -195,21 +192,21 @@ class GraphQlPageCollection(collections.abc.Sequence):
                 response_data = result.json()
             except:
                 response_data = json.loads(json.dumps(result.text))
-            
+
             #self.logger.info(f"api return: {response_data}")
 
             if type(response_data) == dict:
                 err = process_dict_response(self.logger, result, response_data)
-                
+
                 if err == GithubApiResult.REPO_NOT_FOUND:
                     self.logger.error(f"Repo not found! \n response_data: {response_data}")
                     return None
-                
+
                 if err and err != GithubApiResult.SUCCESS:
                     attempts += 1
                     self.logger.info(f"err: {err} \n response_data: {response_data}")
                     continue
-                
+
                 success = True
                 break
             elif type(response_data) == list:
@@ -233,17 +230,14 @@ class GraphQlPageCollection(collections.abc.Sequence):
                         if err and err != GithubApiResult.SUCCESS:
                             attempts += 1
                             continue
-                        
+
                         success = True
                         break
                     except:
                         pass
             attempts += 1
 
-        if not success:
-            return None
-
-        return response_data
+        return None if not success else response_data
 
     def hit_api(self,query,variables={}):
         return hit_api_graphql(self.keyAuth, self.url, self.logger, query,variables=variables)
@@ -290,7 +284,7 @@ class GraphQlPageCollection(collections.abc.Sequence):
         params.update(self.bind)
 
 
-        for page in range(items_page):
+        for _ in range(items_page):
             data = self.request_graphql_dict(variables=params)
             #extract the content from the graphql query result
             coreData = self.extract_paginate_result(data)
@@ -304,13 +298,13 @@ class GraphQlPageCollection(collections.abc.Sequence):
 
             #extract the pageinfo
             pageInfo = coreData['pageInfo']
-            
+
             #check if there is a next page to paginate. (graphql doesn't support random access)
             if pageInfo['hasNextPage']:
                 params['cursor'] = pageInfo['endCursor']
             else:
                 break
-        
+
 
         return self.page_cache[index]
     
@@ -325,9 +319,7 @@ class GraphQlPageCollection(collections.abc.Sequence):
         data = self.request_graphql_dict(variables=params)
         coreData = self.extract_paginate_result(data)
 
-        totalCount = int(coreData['totalCount'])
-
-        return totalCount
+        return int(coreData['totalCount'])
     
     def __iter__(self):
         params = {
@@ -348,7 +340,7 @@ class GraphQlPageCollection(collections.abc.Sequence):
             self.logger.error("Could not extract paginate result because there was no data returned")
             self.logger.error(
                 ''.join(traceback.format_exception(None, e, e.__traceback__)))
-            
+
             self.logger.info(f"Graphql paramters: {params}")
             return
 
@@ -358,7 +350,7 @@ class GraphQlPageCollection(collections.abc.Sequence):
             return
 
         content = []
-        
+
         #extract the content from the graphql query result 
         for data in coreData['edges']:
             yield data['node']
@@ -377,8 +369,8 @@ class GraphQlPageCollection(collections.abc.Sequence):
                 self.logger.error("Could not extract paginate result because there was no data returned")
                 self.logger.error(
                     ''.join(traceback.format_exception(None, e, e.__traceback__)))
-                
-                self.logger.info(f"Trying again...")
+
+                self.logger.info("Trying again...")
                 data = self.request_graphql_dict(variables=params)
 
             coreData = self.extract_paginate_result(data)
@@ -386,7 +378,7 @@ class GraphQlPageCollection(collections.abc.Sequence):
             #print(coreData)
             if len(coreData['edges']) == 0:
                 return
-            
+
             for data in coreData['edges']:
                 yield data['node']
 
@@ -449,11 +441,9 @@ class GitHubRepo():
             'values' : values
         }
 
-        
 
-        issueCollection = GraphQlPageCollection(query, self.keyAuth,self.logger,bind=params)
 
-        return issueCollection
+        return GraphQlPageCollection(query, self.keyAuth,self.logger,bind=params)
     
     #Get pr reviews from here and mark the ones we can't get all at once.
     def get_pull_requests_collection(self):
@@ -519,9 +509,13 @@ class GitHubRepo():
 
         repaginateIfIncomplete = ['reviews']
 
-        pull_request_collection = GraphQlPageCollection(query, self.keyAuth,self.logger,bind=params,repaginateIfIncomplete=repaginateIfIncomplete)
-
-        return pull_request_collection
+        return GraphQlPageCollection(
+            query,
+            self.keyAuth,
+            self.logger,
+            bind=params,
+            repaginateIfIncomplete=repaginateIfIncomplete,
+        )
 
 
 
@@ -580,6 +574,4 @@ class PullRequest():
             'values' : values
         }
 
-        review_collection = GraphQlPageCollection(query, self.keyAuth, self.logger,bind=params)
-
-        return review_collection
+        return GraphQlPageCollection(query, self.keyAuth, self.logger,bind=params)

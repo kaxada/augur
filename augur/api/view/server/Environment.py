@@ -25,16 +25,10 @@ class Environment:
             self[key] = value
 
     def getany(self, *args):
-        result = {}
-        for arg in args:
-            if self[arg]:
-                result[arg] = self[arg]
-        return result
+        return {arg: self[arg] for arg in args if self[arg]}
 
     def as_type(self, type, key):
-        if self[key]:
-            return type(self[key])
-        return None
+        return type(self[key]) if self[key] else None
 
     def __getitem__(self, key):
         return os.getenv(key)
@@ -49,4 +43,4 @@ class Environment:
         return str(os.environ)
 
     def __iter__(self):
-        return (item for item in os.environ.items)
+        return iter(os.environ.items)

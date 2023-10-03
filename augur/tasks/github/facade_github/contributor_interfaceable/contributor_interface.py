@@ -53,7 +53,7 @@ def request_dict_from_endpoint(session, url, timeout_wait=10):
         if not response:
             attempts += 1
             continue
-        
+
         try:
             response_data = response.json()
         except:
@@ -62,7 +62,7 @@ def request_dict_from_endpoint(session, url, timeout_wait=10):
         if type(response_data) == dict:
             err = process_dict_response(session.logger,response,response_data)
 
-            
+
             #If we get an error message that's not None
             if err and err != GithubApiResult.SUCCESS:
                 attempts += 1
@@ -92,27 +92,17 @@ def request_dict_from_endpoint(session, url, timeout_wait=10):
                     #If we get an error message that's not None
                     if err and err != GithubApiResult.SUCCESS:
                         continue
-                    
+
                     success = True
                     break
                 except:
                     pass
         attempts += 1
-    if not success:
-        return None
-
-    return response_data
+    return None if not success else response_data
 
 
 def create_endpoint_from_email(email):
-    #self.logger.info(f"Trying to resolve contributor from email: {email}")
-    # Note: I added "+type:user" to avoid having user owned organizations be returned
-    # Also stopped splitting per note above.
-    url = 'https://api.github.com/search/users?q={}+in:email+type:user'.format(
-        email)
-    
-
-    return url
+    return f'https://api.github.com/search/users?q={email}+in:email+type:user'
 
 
 def create_endpoint_from_commit_sha(logger,db,commit_sha, repo_id):
@@ -134,9 +124,9 @@ def create_endpoint_from_commit_sha(logger,db,commit_sha, repo_id):
     #session.logger.info(f"Result: {result}")
 
     split_git = result.repo_git.split('/')
-    repo_name_and_org = split_git[-2] + "/" + result.repo_name
+    repo_name_and_org = f"{split_git[-2]}/{result.repo_name}"
 
-    url = "https://api.github.com/repos/" + repo_name_and_org + "/commits/" + commit_sha
+    url = f"https://api.github.com/repos/{repo_name_and_org}/commits/{commit_sha}"
 
     logger.info(f"Url: {url}")
 
@@ -159,10 +149,7 @@ def create_endpoint_from_name(contributor):
         # Pythonic way to get the end of a list so that we truely get the last name.
         'lname': contributor[name_field].split()[-1]
     }
-    url = 'https://api.github.com/search/users?q=fullname:{}+{}'.format(
-        cmt_cntrb['fname'], cmt_cntrb['lname'])
-
-    return url
+    return f"https://api.github.com/search/users?q=fullname:{cmt_cntrb['fname']}+{cmt_cntrb['lname']}"
 
 def insert_alias(logger,db, contributor, email):
     # Insert cntrb_id and email of the corresponding record into the alias table
@@ -229,7 +216,8 @@ def resolve_if_login_existing(session, contributor):
 
     # If not found, return false
     session.logger.info(
-        f"Contributor not found in contributors table but can be added. Adding...")
+        "Contributor not found in contributors table but can be added. Adding..."
+    )
     return False
 """
 No longer used after orm upsert implement
@@ -303,20 +291,20 @@ def fetch_username_from_email(logger, auth, commit):
         return login_json
 
     login_json, _ = retrieve_dict_from_endpoint(logger, auth, url)
-    
-    # Check if the email result got anything, if it failed try a name search.
-    if login_json is None or 'total_count' not in login_json or login_json['total_count'] == 0:
-        logger.info(
-            f"Could not resolve the username from {commit['email_raw']}")
-        logger.info(f"email api url {url}")
 
-        return None
-    else:
+    if (
+        login_json is not None
+        and 'total_count' in login_json
+        and login_json['total_count'] != 0
+    ):
         # Return endpoint dictionary if email found it.
         return login_json
 
-    # failure condition returns None
-    return login_json
+    logger.info(
+        f"Could not resolve the username from {commit['email_raw']}")
+    logger.info(f"email api url {url}")
+
+    return None
 
 # Method to return the login given commit data using the supplemental data in the commit
 #   -email
@@ -329,7 +317,7 @@ def get_login_with_supplemental_data(logger,db,auth, commit_data):
 
     # Check if the email result got anything, if it failed, place in unresolved and try a name search.
     if login_json is None or 'total_count' not in login_json or login_json['total_count'] == 0:
-        
+
         unresolved = {
             "email": commit_data['email_raw'],
             "name": commit_data['name'],
@@ -337,7 +325,7 @@ def get_login_with_supplemental_data(logger,db,auth, commit_data):
         logger.info(f"Inserting data to unresolved: {unresolved}")
 
         try:
-            
+
             unresolved_natural_keys = ['email']
             db.insert_data(unresolved, UnresolvedCommitEmail, unresolved_natural_keys)
         except Exception as e:
@@ -373,7 +361,8 @@ def get_login_with_supplemental_data(logger,db,auth, commit_data):
             match = item
 
     logger.debug(
-        "When searching for a contributor, we found the following users: {}\n".format(match))
+        f"When searching for a contributor, we found the following users: {match}\n"
+    )
 
     return match['login']
 

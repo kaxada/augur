@@ -91,8 +91,7 @@ def register_metric(metadata=None, **kwargs):
     Extract authorization token by type from request header
 """
 def get_token(token_type):
-    auth = request.headers.get("Authorization")
-    if auth:
+    if auth := request.headers.get("Authorization"):
         tokens = auth.split(",")
         for token in tokens:
             if f"{token_type} " in token:

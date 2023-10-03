@@ -99,7 +99,10 @@ class AugurCoreRepoCollectionTask(celery.Task):
             #i.e. detect_repo_move changes the repo's repo_git and resets collection to pending without error
             prevStatus = getattr(repoStatus, f"{collection_hook}_status")
 
-            if prevStatus == CollectionState.COLLECTING.value or prevStatus == CollectionState.INITIALIZING.value:
+            if prevStatus in [
+                CollectionState.COLLECTING.value,
+                CollectionState.INITIALIZING.value,
+            ]:
                 setattr(repoStatus, f"{collection_hook}_status", CollectionState.ERROR.value)
                 setattr(repoStatus, f"{collection_hook}_task_id", None)
                 session.commit()
@@ -209,8 +212,8 @@ def setup_periodic_tasks(sender, **kwargs):
     from augur.tasks.git.facade_tasks import clone_repos
     from augur.tasks.db.refresh_materialized_views import refresh_materialized_views
     from augur.tasks.data_analysis.contributor_breadth_worker.contributor_breadth_worker import contributor_breadth_model
-    
-    with DatabaseEngine() as engine, DatabaseSession(logger, engine) as session:
+
+    with (DatabaseEngine() as engine, DatabaseSession(logger, engine) as session):
 
         config = AugurConfig(logger, session)
 
@@ -224,13 +227,13 @@ def setup_periodic_tasks(sender, **kwargs):
         sender.add_periodic_task(non_domain_collection_interval, non_repo_domain_tasks.s())
 
         mat_views_interval = int(config.get_value('Celery', 'refresh_materialized_views_interval_in_days'))
-        logger.info(f"Scheduling refresh materialized view every night at 1am CDT")
+        logger.info("Scheduling refresh materialized view every night at 1am CDT")
         sender.add_periodic_task(datetime.timedelta(days=mat_views_interval), refresh_materialized_views.s())
 
-        logger.info(f"Scheduling update of collection weights on midnight each day")
+        logger.info("Scheduling update of collection weights on midnight each day")
         sender.add_periodic_task(crontab(hour=0, minute=0),augur_collection_update_weights.s())
 
-        logger.info(f"Scheduling contributor breadth every 30 days")
+        logger.info("Scheduling contributor breadth every 30 days")
         thirty_days_in_seconds = 30*24*60*60
         sender.add_periodic_task(thirty_days_in_seconds, contributor_breadth_model.s())
 

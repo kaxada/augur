@@ -27,13 +27,13 @@ def clear_all():
         if not user_input:
             logger.info("Exiting")
             return
-        
-        if user_input in ("y", "Y", "Yes", "yes"):
+
+        if user_input in {"y", "Y", "Yes", "yes"}:
             logger.info("Clearing call redis databases")
             redis_conn.flushall()
             return
 
-        elif user_input in ("n", "N", "no", "NO"):
+        elif user_input in {"n", "N", "no", "NO"}:
             logger.info("Exiting")
             return
         else:

@@ -147,9 +147,10 @@ class RepoLoadController:
 
         results['url'] = results['url'].apply(lambda datum: datum.split('//')[1])
 
-        b64_urls = []
-        for i in results.index:
-            b64_urls.append(base64.b64encode((results.at[i, 'url']).encode()))
+        b64_urls = [
+            base64.b64encode((results.at[i, 'url']).encode())
+            for i in results.index
+        ]
         results['base64_url'] = b64_urls
 
         data = results.to_dict(orient="records")

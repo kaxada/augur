@@ -8,7 +8,7 @@ from augur.api.routes import AUGUR_API_VERSION
 from ..server import app, engine
 
 
-@app.route('/{}/collection_status/commits'.format(AUGUR_API_VERSION))
+@app.route(f'/{AUGUR_API_VERSION}/collection_status/commits')
 def commit_collection_status():  # TODO: make this name automatic - wrapper?
     commit_collection_sql = s.sql.text("""
         SELECT
@@ -32,7 +32,7 @@ def commit_collection_status():  # TODO: make this name automatic - wrapper?
                     status=200,
                     mimetype="application/json")
 
-@app.route('/{}/collection_status/issues'.format(AUGUR_API_VERSION))
+@app.route(f'/{AUGUR_API_VERSION}/collection_status/issues')
 def issue_collection_status():  # TODO: make this name automatic - wrapper?
     issue_collection_sql = s.sql.text("""
         SELECT
@@ -94,7 +94,7 @@ def issue_collection_status():  # TODO: make this name automatic - wrapper?
                     status=200,
                     mimetype="application/json")
 
-@app.route('/{}/collection_status/pull_requests'.format(AUGUR_API_VERSION))
+@app.route(f'/{AUGUR_API_VERSION}/collection_status/pull_requests')
 def pull_request_collection_status():  # TODO: make this name automatic - wrapper?
     pull_request_collection_sql = s.sql.text("""
         SELECT

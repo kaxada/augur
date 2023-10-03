@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def get_delete_statement(schema, table):
 
-    return """DELETE FROM "{}"."{}";""".format(schema, table)
+    return f"""DELETE FROM "{schema}"."{table}";"""
 
 def get_repo_delete_statement():
 
@@ -92,35 +92,33 @@ def add_keys_to_test_db(test_db_engine):
 
 def get_repo_insert_statement(repo_id, rg_id, repo_url="place holder url"):
 
-    return """INSERT INTO "augur_data"."repo" ("repo_id", "repo_group_id", "repo_git", "repo_path", "repo_name", "repo_added", "repo_type", "url", "owner_id", "description", "primary_language", "created_at", "forked_from", "updated_at", "repo_archived_date_collected", "repo_archived", "tool_source", "tool_version", "data_source", "data_collection_date") VALUES ({}, {}, '{}', NULL, NULL, '2022-08-15 21:08:07', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CLI', '1.0', 'Git', '2022-08-15 21:08:07');""".format(repo_id, rg_id, repo_url)
+    return f"""INSERT INTO "augur_data"."repo" ("repo_id", "repo_group_id", "repo_git", "repo_path", "repo_name", "repo_added", "repo_type", "url", "owner_id", "description", "primary_language", "created_at", "forked_from", "updated_at", "repo_archived_date_collected", "repo_archived", "tool_source", "tool_version", "data_source", "data_collection_date") VALUES ({repo_id}, {rg_id}, '{repo_url}', NULL, NULL, '2022-08-15 21:08:07', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CLI', '1.0', 'Git', '2022-08-15 21:08:07');"""
 
 def get_user_repo_insert_statement(repo_id, group_id):
 
-    return """INSERT INTO "augur_operations"."user_repos" ("repo_id", "group_id") VALUES ({}, {});""".format(repo_id, group_id)
+    return f"""INSERT INTO "augur_operations"."user_repos" ("repo_id", "group_id") VALUES ({repo_id}, {group_id});"""
 
 def get_repo_group_insert_statement(rg_id):
 
-    return """INSERT INTO "augur_data"."repo_groups" ("repo_group_id", "rg_name", "rg_description", "rg_website", "rg_recache", "rg_last_modified", "rg_type", "tool_source", "tool_version", "data_source", "data_collection_date") VALUES ({}, 'Default Repo Group', 'The default repo group created by the schema generation script', '', 0, '2019-06-03 15:55:20', 'GitHub Organization', 'load', 'one', 'git', '2019-06-05 13:36:25');""".format(rg_id)
+    return f"""INSERT INTO "augur_data"."repo_groups" ("repo_group_id", "rg_name", "rg_description", "rg_website", "rg_recache", "rg_last_modified", "rg_type", "tool_source", "tool_version", "data_source", "data_collection_date") VALUES ({rg_id}, 'Default Repo Group', 'The default repo group created by the schema generation script', '', 0, '2019-06-03 15:55:20', 'GitHub Organization', 'load', 'one', 'git', '2019-06-05 13:36:25');"""
 
 def get_user_insert_statement(user_id, username="bil", email="default@gmail.com", password="pass"):
 
-    return """INSERT INTO "augur_operations"."users" ("user_id", "login_name", "login_hashword", "email", "first_name", "last_name", "admin") VALUES ({}, '{}', '{}', '{}', 'bill', 'bob', false);""".format(user_id, username, User.compute_hashsed_password(password), email)
+    return f"""INSERT INTO "augur_operations"."users" ("user_id", "login_name", "login_hashword", "email", "first_name", "last_name", "admin") VALUES ({user_id}, '{username}', '{User.compute_hashsed_password(password)}', '{email}', 'bill', 'bob', false);"""
 
 def get_user_group_insert_statement(user_id, group_name, group_id=None):
 
     if group_id:
-        return """INSERT INTO "augur_operations"."user_groups" ("group_id", "user_id", "name") VALUES ({}, {}, '{}');""".format(group_id, user_id, group_name)
+        return f"""INSERT INTO "augur_operations"."user_groups" ("group_id", "user_id", "name") VALUES ({group_id}, {user_id}, '{group_name}');"""
 
-    return """INSERT INTO "augur_operations"."user_groups" ("user_id", "name") VALUES ({}, '{}');""".format(user_id, group_name)
+    return f"""INSERT INTO "augur_operations"."user_groups" ("user_id", "name") VALUES ({user_id}, '{group_name}');"""
 
 
 ######## Helper Functions to get retrieve data from tables #################
 
 def get_repos(connection, where_string=None):
 
-    query_list = []
-    query_list.append('SELECT * FROM "augur_data"."repo"')
-
+    query_list = ['SELECT * FROM "augur_data"."repo"']
     if where_string:
         if where_string.endswith(";"):
              query_list.append(where_string[:-1])
@@ -151,9 +149,7 @@ def get_org_repos(org_name, session):
             attempts += 1
             continue
 
-        response = result.json()
-
-        if response:
+        if response := result.json():
             return response
 
     return None

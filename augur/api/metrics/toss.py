@@ -6,7 +6,7 @@ from augur.api.util import register_metric
 
 from ..server import engine
 
-@register_metric(type="toss") 
+@register_metric(type="toss")
 def toss_pull_request_acceptance_rate(repo_id, begin_date=None, end_date=None, group_by='week'):
     """
     Timeseries of pull request acceptance rate (expressed as the ratio of pull requests merged on a date to the count of pull requests opened on a date)
@@ -56,10 +56,17 @@ def toss_pull_request_acceptance_rate(repo_id, begin_date=None, end_date=None, g
             repo_id
             ) opened ON merged.repo_id = opened.repo_id
     """)
-    
-    results = pd.read_sql(pr_acceptance_rate_sql, engine, params={'repo_id': repo_id, 'group_by': group_by,
-                                                    'begin_date': begin_date, 'end_date': end_date})
-    return results
+
+    return pd.read_sql(
+        pr_acceptance_rate_sql,
+        engine,
+        params={
+            'repo_id': repo_id,
+            'group_by': group_by,
+            'begin_date': begin_date,
+            'end_date': end_date,
+        },
+    )
 
 
 @register_metric(type="toss")
@@ -119,6 +126,5 @@ def toss_repo_info(repo_id):
         repo_info.data_collection_date DESC
     LIMIT 1;
     """)
-    
-    results = pd.read_sql(license_file_sql, engine, params={'repo_id': repo_id})
-    return results
+
+    return pd.read_sql(license_file_sql, engine, params={'repo_id': repo_id})

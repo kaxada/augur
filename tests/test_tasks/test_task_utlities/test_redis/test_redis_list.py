@@ -7,10 +7,7 @@ list_name = "list"
 @pytest.fixture()
 def redis_list():
 
-    redis_list = RedisList(list_name)
-
-    yield redis_list
-
+    yield RedisList(list_name)
     redis.flushdb()
 
 def test_redis_list_append(redis_list):
@@ -53,7 +50,7 @@ def test_redis_list_length(redis_list, data):
 #     assert redis_list.contains(50) == False
 
 
-extend_data_1 = [i for i in range(2, 10, 2)]
+extend_data_1 = list(range(2, 10, 2))
 extend_data_2 = []
 @pytest.mark.parametrize("data", [extend_data_1, extend_data_2])
 def test_redis_list_extend(redis_list, data):

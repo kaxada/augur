@@ -62,8 +62,7 @@ def git_repo_cleanup(session,repo_git):
 
 		absolute_path = get_absolute_repo_path(session.repo_base_directory, row.repo_id, row.repo_path,repo.repo_name)
 
-		cmd = ("rm -rf %s"
-			% (absolute_path))
+		cmd = f"rm -rf {absolute_path}"
 
 		return_code = subprocess.Popen([cmd],shell=True).wait()
 
@@ -113,7 +112,7 @@ def git_repo_cleanup(session,repo_git):
 		#log_activity('Verbose','Deleted repo %s' % row[0])
 		#session.logger.debug(f"Deleted repo {row.repo_id}")
 		session.log_activity('Verbose',f"Deleted repo {row.repo_id}")
-		cleanup = '%s/%s%s' % (row.repo_group_id,row.repo_path,row.repo_name)
+		cleanup = f'{row.repo_group_id}/{row.repo_path}{row.repo_name}'
 
 		# Remove any working commits
 
@@ -136,7 +135,7 @@ def git_repo_cleanup(session,repo_git):
 		while (cleanup.find('/',0) > 0):
 			cleanup = cleanup[:cleanup.rfind('/',0)]
 
-			cmd = "rmdir %s%s" % (session.repo_base_directory,cleanup)
+			cmd = f"rmdir {session.repo_base_directory}{cleanup}"
 			subprocess.Popen([cmd],shell=True).wait()
 			#log_activity('Verbose','Attempted %s' % cmd)
 			#session.logger.debug(f"Attempted {cmd}")
@@ -189,5 +188,5 @@ def git_repo_cleanup(session,repo_git):
 			""").bindparams(repo_group_id=project['repo_group_id'])
 		session.execute_sql(remove_project)
 
-	
+
 	session.log_activity('Info', 'Processing deletions (complete)')

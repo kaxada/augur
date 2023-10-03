@@ -47,7 +47,7 @@ def test_get_config_key_with_none_specified(key_handler, test_db_engine):
 
     config_key = key_handler.get_config_key()
 
-    assert config_key == None
+    assert config_key is None
 
 
 def test_get_api_keys_from_database(key_handler, test_db_engine):

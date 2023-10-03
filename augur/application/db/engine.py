@@ -72,7 +72,7 @@ def get_database_string() -> str:
         print("\n\nPlease run augur commands in the root directory\n\n")
         sys.exit()
 
-    db_json_file_location = current_dir + "/db.config.json"
+    db_json_file_location = f"{current_dir}/db.config.json"
     db_json_exists = os.path.exists(db_json_file_location)
 
     if not augur_db_environment_var and not db_json_exists:
@@ -87,9 +87,7 @@ def get_database_string() -> str:
     with open("db.config.json", 'r') as f:
         db_config = json.load(f)
 
-    db_conn_string = f"postgresql+psycopg2://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['database_name']}"
-
-    return db_conn_string
+    return f"postgresql+psycopg2://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['database_name']}"
 
 def create_database_engine(url, **kwargs):  
     """Create sqlalchemy database engine 
@@ -118,8 +116,7 @@ class DatabaseEngine():
 
     def __init__(self, **kwargs):
 
-        pool_size = kwargs.get("connection_pool_size")
-        if pool_size:
+        if pool_size := kwargs.get("connection_pool_size"):
             del kwargs["connection_pool_size"]
             kwargs["pool_size"] = pool_size
 

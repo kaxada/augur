@@ -40,7 +40,7 @@ def build_model(max_epochs, vec_size, alpha, tag_data):
     model = Doc2Vec(vector_size=vec_size, alpha=alpha,min_alpha=0.00025, min_count=2, dm=1)
     model.build_vocab(tag_data)
 
-    for epoch in range(max_epochs):
+    for _ in range(max_epochs):
         model.train(skl_utils.shuffle(tag_data),
                    total_examples=model.corpus_count,
                    epochs=model.epochs)
@@ -72,19 +72,14 @@ def autoencoder(vec_input, train):
     return model
 
 def reconstruction(pred, val):
-    rec_error = []
-    for i in range(len(pred)):
-        rec_error.append(np.linalg.norm(pred[i] - val[i]))
+    rec_error = [np.linalg.norm(pred[i] - val[i]) for i in range(len(pred))]
     rec_error = np.array(rec_error)
     return rec_error
 
 def get_normal_data(rec_error, val):
     # otsu thresholding corresponding to the maximum value of between two class variances
     threshold = threshold_otsu(rec_error)
-    normals = []
-    for i in range(len(rec_error)):
-        if rec_error[i] < threshold:
-            normals.append(val[i])
+    normals = [val[i] for i in range(len(rec_error)) if rec_error[i] < threshold]
     normals = np.array(normals)
     return threshold, normals
 
@@ -138,7 +133,7 @@ def novelty_analysis(df_message, r_id, models_dir, full_train=True):
     # print(tag_data)
     model = build_model(max_epochs=100, vec_size=300, alpha=0.01, tag_data=tag_data)
 
-    today=datetime.today()
+    today = datetime.now()
     timer = today - timedelta(days=45)
     timerstr = timer.strftime('%Y-%m-%d')
 
@@ -163,7 +158,7 @@ def novelty_analysis(df_message, r_id, models_dir, full_train=True):
 
     # Trains the AE model when worker runs first time
     if full_train:
-    
+
         # First autoencoder to identify normal data records
         ae1 = autoencoder(300, doc2vec_vectors)
         #logger.info('AE 1 training done')

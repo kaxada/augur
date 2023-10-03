@@ -58,11 +58,15 @@ def internal_server_error(error):
 def unauthorized():
     if AUGUR_API_VERSION in str(request.path):
         token_str = get_bearer_token()
-        token = db_session.query(UserSessionToken).filter(UserSessionToken.token == token_str).first()
-        if not token:
-            return jsonify({"status": "Session expired"})
+        if (
+            token := db_session.query(UserSessionToken)
+            .filter(UserSessionToken.token == token_str)
+            .first()
+        ):
+            return jsonify({"status": "Login required"})
 
-        return jsonify({"status": "Login required"})
+        else:
+            return jsonify({"status": "Session expired"})
 
     session["login_next"] = url_for(request.endpoint, **request.args)
     return redirect(url_for('user_login'))
@@ -100,9 +104,14 @@ def load_user_request(request):
     token = get_bearer_token()
 
     current_time = int(time.time())
-    token = db_session.query(UserSessionToken).filter(UserSessionToken.token == token, UserSessionToken.expiration >= current_time).first()
-    if token:
-
+    if (
+        token := db_session.query(UserSessionToken)
+        .filter(
+            UserSessionToken.token == token,
+            UserSessionToken.expiration >= current_time,
+        )
+        .first()
+    ):
         print("Valid user")
 
         user = token.user
@@ -110,7 +119,7 @@ def load_user_request(request):
         user._is_active = True
 
         return user
-        
+
     return None
 
 @app.template_filter('as_datetime')

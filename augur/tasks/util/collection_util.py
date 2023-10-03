@@ -41,10 +41,7 @@ def get_enabled_phase_names_from_config(logger, session):
     config = AugurConfig(logger, session)
     phase_options = config.get_section("Task_Routine")
 
-    #Get list of enabled phases 
-    enabled_phase_names = [name for name, phase in phase_options.items() if phase == 1]
-
-    return enabled_phase_names
+    return [name for name, phase in phase_options.items() if phase == 1]
 
 #Query db for CollectionStatus records that fit the desired condition.
 #Used to get CollectionStatus for differant collection hooks
@@ -245,9 +242,7 @@ def get_repo_weight_secondary(logger,repo_git):
 
         status = repo.collection_status[0]
 
-        last_collected = status.secondary_data_last_collected
-
-        if last_collected:
+        if last_collected := status.secondary_data_last_collected:
             time_delta = datetime.datetime.now() - status.secondary_data_last_collected
             days = time_delta
         else:
@@ -362,9 +357,7 @@ class AugurCollectionTotalRepoWeight:
         else:
             raise TypeError(f"Could not subtract object of type {type(other)}")
 
-        if self.value < 0:
-            self.value = 0
-
+        self.value = max(self.value, 0)
         return self
 
 
@@ -420,18 +413,10 @@ class AugurTaskRoutine:
     
     def send_messages(self):
         augur_collection_list = []
-        
+
         for repo_git in self.repos:
 
-            #repo = self.session.query(Repo).filter(Repo.repo_git == repo_git).one()
-            #repo_id = repo.repo_id
-
-            augur_collection_sequence = []
-            for job in self.collection_phases:
-                #Add the phase to the sequence in order as a celery task.
-                #The preliminary task creates the larger task chain 
-                augur_collection_sequence.append(job(repo_git))
-
+            augur_collection_sequence = [job(repo_git) for job in self.collection_phases]
             #augur_collection_sequence.append(core_task_success_util.si(repo_git))
             #Link all phases in a chain and send to celery
             augur_collection_chain = chain(*augur_collection_sequence)
@@ -475,15 +460,15 @@ def start_repos_from_given_group_of_users(session,limit,users,condition_string,p
     valid_repo_git_list = [repo[1] for repo in valid_repos]
 
     session.logger.info(f"valid repo git list: {tuple(valid_repo_git_list)}")
-    
-    #start repos for new primary collection hook
-    collection_size = start_block_of_repos(
-        session.logger, session,
-        valid_repo_git_list,
-        phases, repos_type=repos_type, hook=hook
-    )
 
-    return collection_size
+    return start_block_of_repos(
+        session.logger,
+        session,
+        valid_repo_git_list,
+        phases,
+        repos_type=repos_type,
+        hook=hook,
+    )
 
 """
     Generalized function for starting a phase of tasks for a given collection hook with options to add restrictive conditions

@@ -953,11 +953,7 @@ class Repo(Base):
 
         result = re.search(r"https?:\/\/github\.com\/([A-Za-z0-9 \- _]+)\/?$", url)
 
-        if not result:
-            return None
-
-        # if the result is not None then the groups should be valid so we don't worry about index errors here
-        return result.groups()[0]
+        return None if not result else result.groups()[0]
 
     @staticmethod
     def insert(session, url: str, repo_group_id: int, tool_source, repo_type):
@@ -976,12 +972,10 @@ class Repo(Base):
 
         if not RepoGroup.is_valid_repo_group_id(session, repo_group_id):
             return None
-        
-        if url.endswith("/"):
-            url = url[:-1]
-        
+
+        url = url.removesuffix("/")
         url = url.lower()
-        
+
         owner, repo = Repo.parse_github_repo_url(url)
         if not owner or not repo:
             return None
@@ -1001,10 +995,7 @@ class Repo(Base):
         return_columns = ["repo_id"]
         result = session.insert_data(repo_data, Repo, repo_unique, return_columns, on_conflict_update=False)
 
-        if not result:
-            return None
-
-        return result[0]["repo_id"]
+        return None if not result else result[0]["repo_id"]
 
 
 

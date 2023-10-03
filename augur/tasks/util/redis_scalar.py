@@ -19,7 +19,7 @@ class RedisScalar:
         self.__value = default_value
 
         #Check redis to see if key exists in cache
-        if 1 != redis.exists(self.redis_scalar_key) or override_existing:
+        if redis.exists(self.redis_scalar_key) != 1 or override_existing:
             #Set value
             redis.set(self.redis_scalar_key,self.__value)
         else:

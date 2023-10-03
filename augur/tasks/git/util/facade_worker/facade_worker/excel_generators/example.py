@@ -53,8 +53,6 @@ def get_setting(setting):
 
 #--> Set your filename
 
-filename = 'facade_summary-projects_by_LoC_and_number_contributors_by_year.xlsx'
-
 #--> Set the description of the data
 
 detail = 'LoC added (Unique emails)'
@@ -72,6 +70,9 @@ cursor.execute(get_x_axis)
 x_axis = list(cursor)
 
 facade_dir = dirname(dirname(dirname(filepath)))
+filename = (
+	'facade_summary-projects_by_LoC_and_number_contributors_by_year.xlsx'
+)
 outfile = os.path.join(facade_dir,'files',filename)
 
 workbook = xlsxwriter.Workbook(outfile)
@@ -81,17 +82,18 @@ italic = workbook.add_format({'italic': True})
 bold_italic = workbook.add_format({'bold': True, 'italic': True})
 numformat = workbook.add_format({'num_format': '#,##0'})
 
+top_row = 5
+first_col = 1
+
 for sheet in sheets:
 
 	worksheet = workbook.add_worksheet(str(sheet))
 
-	worksheet.write(1,1,'Report generated on %s by Facade' %
-		time.strftime('%Y-%m-%d'),bold)
+	worksheet.write(
+		1, 1, f"Report generated on {time.strftime('%Y-%m-%d')} by Facade", bold
+	)
 	worksheet.write(2,1,'https://github.com/brianwarner/facade')
-	worksheet.write(3,1,'Format: %s' % detail)
-
-	top_row = 5
-	first_col = 1
+	worksheet.write(3, 1, f'Format: {detail}')
 
 	col = first_col + 1
 
@@ -105,10 +107,7 @@ for sheet in sheets:
 
 	#--> Change this to modify the y axis
 
-	get_y_axis = ("SELECT DISTINCT affiliation FROM project_annual_cache "
-		"WHERE year = %s "
-		"ORDER BY affiliation ASC"
-		% sheet)
+	get_y_axis = f"SELECT DISTINCT affiliation FROM project_annual_cache WHERE year = {sheet} ORDER BY affiliation ASC"
 
 	cursor.execute(get_y_axis)
 	y_axis = list(cursor)
@@ -144,8 +143,7 @@ for sheet in sheets:
 				#--> Change this to define the format for each data point
 
 				if stat['added']:
-					worksheet.write(row,col,'%s (%s)'
-						% (stat['added'], stat['emails']))
+					worksheet.write(row, col, f"{stat['added']} ({stat['emails']})")
 
 			col += 1
 		row += 1

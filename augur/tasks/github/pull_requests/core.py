@@ -163,9 +163,12 @@ def insert_prs(pr_dicts: List[dict], session: DatabaseSession, task_name: str) -
     session.logger.info(f"{task_name}: Inserting prs of length: {len(pr_dicts)}")
     pr_natural_keys = ["pr_url"]
     pr_return_columns = ["pull_request_id", "pr_url"]
-    pr_return_data = session.insert_data(pr_dicts, PullRequest, pr_natural_keys, return_columns=pr_return_columns)
-
-    return pr_return_data
+    return session.insert_data(
+        pr_dicts,
+        PullRequest,
+        pr_natural_keys,
+        return_columns=pr_return_columns,
+    )
 
 def map_other_pr_data_to_pr(
                             pr_return_data: List[dict], 
@@ -280,15 +283,11 @@ def insert_pr_metadata(metadata: List[dict], logger: logging.Logger, session) ->
 # and creates a cntrb_id (primary key for the contributors table) and gets the data needed for the table
 def process_pull_request_contributors(pr: dict, tool_source: str, tool_version: str, data_source: str) -> Tuple[dict, List[dict]]:
 
-    contributors = []
-
     # get contributor data and set pr cntrb_id
     pr_cntrb = extract_needed_contributor_data(pr["user"], tool_source, tool_version, data_source)
     pr["cntrb_id"] = pr_cntrb["cntrb_id"]
 
-    contributors.append(pr_cntrb)
-
-
+    contributors = [pr_cntrb]
     if pr["base"]["user"]:
 
         # get contributor data and set pr metadat cntrb_id

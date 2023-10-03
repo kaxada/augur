@@ -106,8 +106,8 @@ def get_log_config():
 
 #TODO dynamically define loggers for every task names.
 class TaskLogConfig():
-    def __init__(self, all_tasks, disable_log_files=False,reset_logfiles=False,base_log_dir=ROOT_AUGUR_DIRECTORY + "/logs/"):
-        
+    def __init__(self, all_tasks, disable_log_files=False, reset_logfiles=False, base_log_dir=f"{ROOT_AUGUR_DIRECTORY}/logs/"):
+
         log_config = get_log_config()
 
         if log_config["logs_directory"] != "":
@@ -159,15 +159,15 @@ class TaskLogConfig():
     def initialize_task_file_logging(self, logger, module, task):
 
         #Put logs in seperate folders by module.
-        module_folder = Path(str(self.base_log_dir) + "/" + str(module) + "/")
+        module_folder = Path(f"{str(self.base_log_dir)}/{str(module)}/")
         module_folder.mkdir(exist_ok=True)
 
         #Each task should have a seperate folder
-        task_folder = Path(str(module_folder) + "/" + str(task) + "/")
+        task_folder = Path(f"{str(module_folder)}/{str(task)}/")
         task_folder.mkdir(exist_ok=True)
 
         #Absolute path to log file
-        file = str(task_folder) + "/" + str(task)
+        file = f"{str(task_folder)}/{str(task)}"
 
         initialize_file_handlers(logger, file, self.logLevel)
 
@@ -177,10 +177,10 @@ class TaskLogConfig():
 
 
 class AugurLogger():
-    def __init__(self, logger_name, disable_log_files=False,reset_logfiles=False,base_log_dir=ROOT_AUGUR_DIRECTORY + "/logs/"):
-        
+    def __init__(self, logger_name, disable_log_files=False, reset_logfiles=False, base_log_dir=f"{ROOT_AUGUR_DIRECTORY}/logs/"):
+
         log_config = get_log_config()
-        
+
         if log_config["logs_directory"] != "":
             base_log_dir=log_config["logs_directory"]
 
@@ -216,7 +216,7 @@ class AugurLogger():
 
     def initialize_augur_logger_file_logging(self, logger):
 
-        file = str(self.base_log_dir) + "/" + str(self.logger_name)
+        file = f"{str(self.base_log_dir)}/{str(self.logger_name)}"
 
         initialize_file_handlers(logger, file, self.logLevel)
     

@@ -43,7 +43,7 @@ def get_owner_repo(git_url: str) -> Tuple[str, str]:
     owner = split[-2]
     repo = split[-1]
 
-    if '.git' == repo[-4:]:
+    if repo[-4:] == '.git':
         repo = repo[:-4]
 
     return owner, repo

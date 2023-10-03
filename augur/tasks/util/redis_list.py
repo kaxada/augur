@@ -73,10 +73,9 @@ class RedisList(MutableSequence):
             return item
         except ValueError:
             pass
-        
+
         try:
-            item = float(item)
-            return item
+            return float(item)
         except ValueError:
             pass
 
@@ -217,12 +216,12 @@ if __name__ == "__main__":
 
     redis.flushdb()
     redis_list = RedisList("list")
-    
+
     # redis_list.append(5)
     # redis_list.append(15)
     # redis_list.append(8)
     # redis_list.append(8)
-    redis_list[0:4:2] = [0, 1]
+    redis_list[:4:2] = [0, 1]
     print("List values")
     redis_list.print_values()
 

@@ -39,13 +39,11 @@ def get_application_info(application: ClientApplication):
     user: User = application.user
     sessions = application.sessions
 
-    info = {
+    return {
         "name": application.name,
         "user": user.login_name,
-        "active_sessions": len(sessions)
+        "active_sessions": len(sessions),
     }
-
-    return info
 
 @app.route(f"/{AUGUR_API_VERSION}/application/group/repos", methods=['GET', 'POST'])
 @ssl_required
@@ -139,13 +137,11 @@ def get_application_groups_and_repos(application: ClientApplication):
 
     valid_columns = []
     columns =  columns.split(",")
-    for column in columns:
-
-        if column.isspace() or column == "":
-            continue
-
-        valid_columns.append(column.strip())
-
+    valid_columns.extend(
+        column.strip()
+        for column in columns
+        if not column.isspace() and column != ""
+    )
     data = []
     groups = application.user.groups
     for group in groups:

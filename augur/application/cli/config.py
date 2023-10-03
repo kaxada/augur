@@ -24,11 +24,11 @@ def cli():
     pass
 
 @cli.command('init')
-@click.option('--github-api-key', help="GitHub API key for data collection from the GitHub API", envvar=ENVVAR_PREFIX + 'GITHUB_API_KEY')
-@click.option('--facade-repo-directory', help="Directory on the database server where Facade should clone repos", envvar=ENVVAR_PREFIX + 'FACADE_REPO_DIRECTORY')
-@click.option('--gitlab-api-key', help="GitLab API key for data collection from the GitLab API", envvar=ENVVAR_PREFIX + 'GITLAB_API_KEY')
-@click.option('--redis-conn-string', help="String to connect to redis cache", envvar=ENVVAR_PREFIX + 'REDIS_CONN_STRING')
-@click.option('--rabbitmq-conn-string', help="String to connect to rabbitmq broker", envvar=ENVVAR_PREFIX + 'RABBITMQ_CONN_STRING')
+@click.option('--github-api-key', help="GitHub API key for data collection from the GitHub API", envvar=f'{ENVVAR_PREFIX}GITHUB_API_KEY')
+@click.option('--facade-repo-directory', help="Directory on the database server where Facade should clone repos", envvar=f'{ENVVAR_PREFIX}FACADE_REPO_DIRECTORY')
+@click.option('--gitlab-api-key', help="GitLab API key for data collection from the GitLab API", envvar=f'{ENVVAR_PREFIX}GITLAB_API_KEY')
+@click.option('--redis-conn-string', help="String to connect to redis cache", envvar=f'{ENVVAR_PREFIX}REDIS_CONN_STRING')
+@click.option('--rabbitmq-conn-string', help="String to connect to rabbitmq broker", envvar=f'{ENVVAR_PREFIX}RABBITMQ_CONN_STRING')
 @test_connection
 @test_db_connection
 def init_config(github_api_key, facade_repo_directory, gitlab_api_key, redis_conn_string, rabbitmq_conn_string):
@@ -54,12 +54,9 @@ def init_config(github_api_key, facade_repo_directory, gitlab_api_key, redis_con
 
     if facade_repo_directory[-1] != "/":
         facade_repo_directory += "/"
-            
 
-    keys = {}
 
-    keys["github_api_key"] = github_api_key
-    keys["gitlab_api_key"] = gitlab_api_key
+    keys = {"github_api_key": github_api_key, "gitlab_api_key": gitlab_api_key}
 
     with DatabaseSession(logger) as session:
 
@@ -84,7 +81,7 @@ def init_config(github_api_key, facade_repo_directory, gitlab_api_key, redis_con
                 digits = len(str(cache_number))
 
                 redis_conn_string = redis_conn_string[:-digits]
-            
+
             except ValueError:
                 pass
 
@@ -97,7 +94,7 @@ def init_config(github_api_key, facade_repo_directory, gitlab_api_key, redis_con
 
         default_config["Facade"]["repo_directory"] = facade_repo_directory
 
-        default_config["Logging"]["logs_directory"] = ROOT_AUGUR_DIRECTORY + "/logs/"
+        default_config["Logging"]["logs_directory"] = f"{ROOT_AUGUR_DIRECTORY}/logs/"
 
         config.load_config_from_dict(default_config)
 
@@ -190,24 +187,21 @@ def config_get(section, setting):
         if setting:
             config_value = config.get_value(section_name=section, setting_name=setting)
 
-            if config_value is not None:
-                print(f"======================\n{setting}: {config_value}\n======================")
-            else:
+            if config_value is None:
                 print(f"Error unable to find '{setting}' in the '{section}' section of the config")
-                
-        else:
-            section_data = config.get_section(section_name=section)
-            
-            if section_data:
-                print(f"======================\n{section}\n====")
-                section_data_keys = list(section_data.keys())
-                for key in section_data_keys:
-                    print(f"{key}: {section_data[key]}")
-
-                print("======================")
 
             else:
-                print(f"Error: {section} section not found in config")
+                print(f"======================\n{setting}: {config_value}\n======================")
+        elif section_data := config.get_section(section_name=section):
+            print(f"======================\n{section}\n====")
+            section_data_keys = list(section_data.keys())
+            for key in section_data_keys:
+                print(f"{key}: {section_data[key]}")
+
+            print("======================")
+
+        else:
+            print(f"Error: {section} section not found in config")
 
 @cli.command('clear')
 @test_connection

@@ -96,8 +96,14 @@ def generate_session(application):
 
         seconds_to_expire = 86400
 
-        existing_session = session.query(UserSessionToken).filter(UserSessionToken.user_id == user.user_id, UserSessionToken.application_id == application.id).first()
-        if existing_session:
+        if (
+            existing_session := session.query(UserSessionToken)
+            .filter(
+                UserSessionToken.user_id == user.user_id,
+                UserSessionToken.application_id == application.id,
+            )
+            .first()
+        ):
             existing_session.delete_refresh_tokens(session)
 
             session.delete(existing_session)
@@ -384,13 +390,11 @@ def get_user_groups_and_repos():
 
     valid_columns = []
     columns =  columns.split(",")
-    for column in columns:
-
-        if column.isspace() or column == "":
-            continue
-
-        valid_columns.append(column.strip())
-
+    valid_columns.extend(
+        column.strip()
+        for column in columns
+        if not column.isspace() and column != ""
+    )
     data = []
     groups = current_user.groups
     for group in groups:

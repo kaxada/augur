@@ -92,9 +92,7 @@ class GithubApiKeyHandler():
             Valid Github api keys
         """
 
-        redis_keys = list(self.redis_key_list)
-
-        if redis_keys:
+        if redis_keys := list(self.redis_key_list):
             return redis_keys
 
         attempts = 0
@@ -134,17 +132,6 @@ class GithubApiKeyHandler():
         if not valid_keys:
             raise NoValidKeysError("No valid github api keys found in the config or worker oauth table")
 
-
-        # shuffling the keys so not all processes get the same keys in the same order
-        valid_now = valid_keys
-        #try: 
-            #self.logger.info(f'valid keys before shuffle: {valid_keys}')
-            #valid_keys = random.sample(valid_keys, len(valid_keys))
-            #self.logger.info(f'valid keys AFTER shuffle: {valid_keys}')
-        #except Exception as e: 
-         #   self.logger.debug(f'{e}')
-         #   valid_keys = valid_now
-         #   pass 
 
         return valid_keys
 

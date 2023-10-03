@@ -21,7 +21,7 @@ def pull_request_commits_model(repo_id,logger, augur_db, key_auth):
     #pd.read_sql(pr_number_sql, self.db, params={})
 
     pr_urls = augur_db.fetchall_data_from_sql_text(pr_url_sql)#session.execute_sql(pr_number_sql).fetchall()
-    
+
     query = augur_db.session.query(Repo).filter(Repo.repo_id == repo_id)
     repo = execute_session_query(query, 'one')
 
@@ -30,7 +30,7 @@ def pull_request_commits_model(repo_id,logger, augur_db, key_auth):
     task_name = f"{owner}/{name} Pr commits"
 
     logger.info(f"Getting pull request commits for repo: {repo.repo_git}")
-        
+
     all_data = []
     for index,pr_info in enumerate(pr_urls):
         logger.info(f'{task_name}: Querying commits for pull request #{index + 1} of {len(pr_urls)}')
@@ -39,7 +39,7 @@ def pull_request_commits_model(repo_id,logger, augur_db, key_auth):
 
         #Paginate through the pr commits
         pr_commits = GithubPaginator(commits_url, key_auth, logger)
-        
+
         for page_data in pr_commits:
 
             if page_data:
@@ -57,8 +57,8 @@ def pull_request_commits_model(repo_id,logger, augur_db, key_auth):
                 }
 
                 all_data.append(pr_commit_row)
-    
-    if len(all_data) > 0:
+
+    if all_data:
         logger.info(f"{task_name}: Inserting {len(all_data)} rows")
         pr_commits_natural_keys = ["pull_request_id", "repo_id", "pr_cmt_sha"]
         augur_db.insert_data(all_data,PullRequestCommit,pr_commits_natural_keys)

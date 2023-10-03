@@ -81,17 +81,19 @@ def primary_repo_collect_phase(repo_git):
         collect_github_repo_clones_data.si(repo_git),
     )
 
-    #Other tasks that don't need other tasks to run before they do just put in final group.
-    repo_task_group = group(
+    return group(
         collect_repo_info.si(repo_git),
-        chain(primary_repo_jobs | issue_pr_task_update_weight_util.s(repo_git=repo_git),secondary_repo_jobs,process_contributors.si()),
-        #facade_phase(logger,repo_git),
+        chain(
+            primary_repo_jobs
+            | issue_pr_task_update_weight_util.s(repo_git=repo_git),
+            secondary_repo_jobs,
+            process_contributors.si(),
+        ),
+        # facade_phase(logger,repo_git),
         collect_linux_badge_info.si(repo_git),
         collect_releases.si(repo_git),
-        grab_comitters.si(repo_git)
+        grab_comitters.si(repo_git),
     )
-
-    return repo_task_group
 
 
 #This phase creates the message for secondary collection tasks.
@@ -99,14 +101,15 @@ def primary_repo_collect_phase(repo_git):
 def secondary_repo_collect_phase(repo_git):
     logger = logging.getLogger(secondary_repo_collect_phase.__name__)
 
-    repo_task_group = group(
+    return group(
         process_pull_request_files.si(repo_git),
         process_pull_request_commits.si(repo_git),
         process_ossf_dependency_metrics.si(repo_git),
-        chain(collect_pull_request_reviews.si(repo_git), collect_pull_request_review_comments.si(repo_git))
+        chain(
+            collect_pull_request_reviews.si(repo_git),
+            collect_pull_request_review_comments.si(repo_git),
+        ),
     )
-
-    return repo_task_group
 
 
 

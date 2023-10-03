@@ -106,21 +106,19 @@ def discourse_analysis_model(repo_git: str,logger,engine) -> None:
             session.commit()
             # result = db.execute(discourse_insights_table.insert().values(record))
             logging.info(
-                "Primary key inserted into the discourse_insights table: {}".format(discourse_insight_object.msg_discourse_id))
+                f"Primary key inserted into the discourse_insights table: {discourse_insight_object.msg_discourse_id}"
+            )
 
-    logger.info("prediction: " + str(y_pred_git_flat))
+    logger.info(f"prediction: {y_pred_git_flat}")
 
 
 def count_emotions(tokens, logger):
 
     with open(DISCOURSE_ANALYSIS_DIR + "word_to_emotion_map", 'rb') as emotion_map_file:
         word_to_emotion_map = pickle.load(emotion_map_file)
-    count_dict = {}
     emotion_labels = ['anger', 'anticipation', 'disgust', 'fear', 'joy', 'negative', 'positive', 'sadness',
                       'surprise', 'trust']
-    for label in emotion_labels:
-        count_dict[label] = 0
-
+    count_dict = {label: 0 for label in emotion_labels}
     tokens = [token for token in tokens if len(token) > 1]
     stems = [stemmer.stem(t) for t in tokens]
     for stem in stems:
@@ -144,10 +142,7 @@ def create_features_for_structured_prediction(df, text_data_column_name, group_b
     invalid_text_indexes = []
     for text in df[text_data_column_name]:
         feature_dict = tfidf_transformer.transform([text]).todok()
-        feature_dict_n = {}
-        for key, value in feature_dict.items():
-            feature_dict_n[str(key)] = value
-
+        feature_dict_n = {str(key): value for key, value in feature_dict.items()}
         try:
             tokens = nltk.word_tokenize(text)
         except IndexError as e:
@@ -204,6 +199,5 @@ def create_features_for_structured_prediction(df, text_data_column_name, group_b
             if label_available: y_cur.append(row['majority_type'])
         X_all.append(X_cur)
         if label_available: y_all.append(y_cur)
-    if label_available: return X_all, y_all
-    return X_all, df
+    return (X_all, y_all) if label_available else (X_all, df)
 

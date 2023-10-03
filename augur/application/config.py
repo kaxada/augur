@@ -111,32 +111,27 @@ default_config = {
 
 def convert_type_of_value(config_dict, logger=None):
         
-        data_type = config_dict["type"]
+    data_type = config_dict["type"]
 
-        if data_type == "str" or data_type is None:
-            return config_dict
-
-        elif data_type == "int":
-            config_dict["value"] = int(config_dict["value"])
-
-        elif data_type == "bool":
-            value = config_dict["value"]
-            
-            if value.lower() == "false":
-                config_dict["value"] = False
-            else:
-                config_dict["value"] = True
-
-        elif data_type == "float":
-            config_dict["value"] = float(config_dict["value"])
-
-        else:
-            if logger:
-                logger.error(f"Need to add support for {data_type} types to config") 
-            else:
-                print(f"Need to add support for {data_type} types to config")
-
+    if data_type == "str" or data_type is None:
         return config_dict
+
+    elif data_type == "int":
+        config_dict["value"] = int(config_dict["value"])
+
+    elif data_type == "bool":
+        value = config_dict["value"]
+
+        config_dict["value"] = value.lower() != "false"
+    elif data_type == "float":
+        config_dict["value"] = float(config_dict["value"])
+
+    elif logger:
+        logger.error(f"Need to add support for {data_type} types to config")
+    else:
+        print(f"Need to add support for {data_type} types to config")
+
+    return config_dict
 
 class AugurConfig():
 
@@ -312,7 +307,7 @@ class AugurConfig():
 
             value = json_data[key]
 
-            if isinstance(value, dict) is True:
+            if isinstance(value, dict):
                 # TODO: Uncomment out when insights worker config stuff is resolved
                 # self.logger.error(f"Values cannot be of type dict: {value}")
                 return
@@ -337,9 +332,7 @@ class AugurConfig():
             data in the json file
         """
         with open(file_path, 'r') as f:
-            file_data = json.load(f)
-
-            return file_data
+            return json.load(f)
 
     def load_config_from_dict(self, dict_data: dict) -> None:
         """Create config from a dict.
@@ -355,7 +348,7 @@ class AugurConfig():
             #print(f"\n{value}")
             # check for "sections" that are actually just a key value pair 
             # and not a key that has a value of type dict
-            if isinstance(value, dict) is True:
+            if isinstance(value, dict):
                 self.add_section_from_json(section_name=section_name, json_data=value)
 
             else:

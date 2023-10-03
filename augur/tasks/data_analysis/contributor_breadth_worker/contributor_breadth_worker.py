@@ -120,10 +120,8 @@ def contributor_breadth_model() -> None:
 
 def process_contributor_events(cntrb, cntrb_events, logger, tool_source, tool_version, data_source):
 
-    cntrb_repos_insert = []
-    for event_id_api in cntrb_events:
-
-        cntrb_repos_insert.append({
+    return [
+        {
             "cntrb_id": cntrb['cntrb_id'],
             "repo_git": event_id_api['repo']['url'],
             "tool_source": tool_source,
@@ -133,7 +131,7 @@ def process_contributor_events(cntrb, cntrb_events, logger, tool_source, tool_ve
             "gh_repo_id": event_id_api['repo']['id'],
             "cntrb_category": event_id_api['type'],
             "event_id": int(event_id_api['id']),
-            "created_at": event_id_api['created_at']
-        })
-
-    return cntrb_repos_insert
+            "created_at": event_id_api['created_at'],
+        }
+        for event_id_api in cntrb_events
+    ]

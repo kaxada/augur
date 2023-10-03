@@ -322,16 +322,18 @@ def get_df_tuple_locations():
 
 def add_caption_to_plot(caption_plot, caption):
 
-    caption_plot.add_layout(Label(
-        x=0,  # Change to shift caption left or right
-        y=160,
-        x_units='screen',
-        y_units='screen',
-        text='{}'.format(caption),
-        text_font='times',  # Use same font as paper
-        text_font_size='15pt',
-        render_mode='css'
-    ))
+    caption_plot.add_layout(
+        Label(
+            x=0,
+            y=160,
+            x_units='screen',
+            y_units='screen',
+            text=f'{caption}',
+            text_font='times',
+            text_font_size='15pt',
+            render_mode='css',
+        )
+    )
     caption_plot.outline_line_color = None
 
     return caption_plot
@@ -420,10 +422,10 @@ def filter_data(df, needed_columns, not_null_columns=[]):
         #IM - 9/23/22
         df = df.dropna(subset=not_null_columns)#remove_rows_with_null_values(df, not_null_columns)
 
-        return df
     else:
         print("Developer error, not null columns should be a subset of needed columns")
-        return df
+
+    return df
 
 def get_repo_id_start_date_and_end_date():
 
@@ -437,21 +439,21 @@ def get_repo_id_start_date_and_end_date():
     now = datetime.datetime.now()
 
     repo_id = request.args.get('repo_id')
-    start_date = str(request.args.get('start_date', "{}-01-01".format(now.year - 1)))
-    end_date = str(request.args.get('end_date', "{}-{}-{}".format(now.year, now.month, now.day)))
+    start_date = str(request.args.get('start_date', f"{now.year - 1}-01-01"))
+    end_date = str(
+        request.args.get('end_date', f"{now.year}-{now.month}-{now.day}")
+    )
 
     if repo_id:
 
         if start_date < end_date:
             return int(repo_id), start_date, end_date, None
-        else:
+        error = {
+            "message": "Invalid end_date. end_date is before the start_date",
+            "status_code": 400
+        }
 
-            error = {
-                "message": "Invalid end_date. end_date is before the start_date",
-                "status_code": 400
-            }
-
-            return int(repo_id), None, None, error
+        return int(repo_id), None, None, error
 
     else:
         error = {
@@ -460,7 +462,7 @@ def get_repo_id_start_date_and_end_date():
         }
         return None, None, None, error
 
-@app.route('/{}/pull_request_reports/average_commits_per_PR/'.format(AUGUR_API_VERSION), methods=["GET"])
+@app.route(f'/{AUGUR_API_VERSION}/pull_request_reports/average_commits_per_PR/', methods=["GET"])
 def average_commits_per_PR():
 
     repo_id, start_date, end_date, error = get_repo_id_start_date_and_end_date()
@@ -539,8 +541,8 @@ def average_commits_per_PR():
 
     source = ColumnDataSource(data=dict(x=x, counts=counts))
 
-    title_beginning = '{}: '.format(repo_dict[repo_id])
-    title = "{}Average Commit Counts Per Year for {} Pull Requests".format(title_beginning, description)
+    title_beginning = f'{repo_dict[repo_id]}: '
+    title = f"{title_beginning}Average Commit Counts Per Year for {description} Pull Requests"
 
     plot_width = len(x_groups) * 300
     title_text_font_size = 16
@@ -570,7 +572,7 @@ def average_commits_per_PR():
     p.xaxis.axis_label = 'Year Closed'
 
     p.title.align = "center"
-    p.title.text_font_size = "{}px".format(title_text_font_size)
+    p.title.text_font_size = f"{title_text_font_size}px"
 
     p.xaxis.axis_label_text_font_size = "16px"
     p.xaxis.major_label_text_font_size = "15px"

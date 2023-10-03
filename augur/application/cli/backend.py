@@ -56,16 +56,16 @@ def start(disable_collection, development, port):
     except Exception as e: 
         logger.error(
                     ''.join(traceback.format_exception(None, e, e.__traceback__)))
-        
+
         logger.error("Failed to raise open file limit!")
         raise e
-    
+
     if development:
         os.environ["AUGUR_DEV"] = "1"
         logger.info("Starting in development mode")
 
     try:
-        gunicorn_location = os.getcwd() + "/augur/api/gunicorn_conf.py"
+        gunicorn_location = f"{os.getcwd()}/augur/api/gunicorn_conf.py"
     except FileNotFoundError:
         logger.error("\n\nPlease run augur commands in the root directory\n\n")
 
@@ -75,7 +75,7 @@ def start(disable_collection, development, port):
 
         if not port:
             port = config.get_value("Server", "port")
-        
+
         worker_vmem_cap = config.get_value("Celery", 'worker_process_vmem_cap')
 
     gunicorn_command = f"gunicorn -c {gunicorn_location} -b {host}:{port} augur.api.server:app --log-file gunicorn.log"
@@ -101,7 +101,7 @@ def start(disable_collection, development, port):
 
             clean_collection_status(session)
             assign_orphan_repos_to_default_user(session)
-        
+
         create_collection_status_records.si().apply_async()
         time.sleep(3)
 
@@ -111,14 +111,14 @@ def start(disable_collection, development, port):
         clone_repos.si().apply_async()
 
         augur_collection_monitor.si().apply_async()
-        
+
     else:
         logger.info("Collection disabled")   
-    
+
     try:
         server.wait()
     except KeyboardInterrupt:
-        
+
         if server:
             logger.info("Shutting down server")
             server.terminate()
@@ -323,18 +323,17 @@ def export_env(config):
     Exports your GitHub key and database credentials
     """
 
-    export_file = open(os.getenv('AUGUR_EXPORT_FILE', 'augur_export_env.sh'), 'w+')
-    export_file.write('#!/bin/bash')
-    export_file.write('\n')
-    env_file = open(os.getenv('AUGUR_ENV_FILE', 'docker_env.txt'), 'w+')
+    with open(os.getenv('AUGUR_EXPORT_FILE', 'augur_export_env.sh'), 'w+') as export_file:
+        export_file.write('#!/bin/bash')
+        export_file.write('\n')
+        env_file = open(os.getenv('AUGUR_ENV_FILE', 'docker_env.txt'), 'w+')
 
-    for env_var in config.get_env_config().items():
-        if "LOG" not in env_var[0]:
-            logger.info(f"Exporting {env_var[0]}")
-            export_file.write('export ' + env_var[0] + '="' + str(env_var[1]) + '"\n')
-            env_file.write(env_var[0] + '=' + str(env_var[1]) + '\n')
+        for env_var in config.get_env_config().items():
+            if "LOG" not in env_var[0]:
+                logger.info(f"Exporting {env_var[0]}")
+                export_file.write(f'export {env_var[0]}="{str(env_var[1])}' + '"\n')
+                env_file.write(f'{env_var[0]}={str(env_var[1])}' + '\n')
 
-    export_file.close()
     env_file.close()
 
 @cli.command('repo-reset')
@@ -380,10 +379,7 @@ def get_augur_processes():
     return augur_processes
 
 def _broadcast_signal_to_processes(processes, broadcast_signal=signal.SIGTERM, given_logger=None):
-    if given_logger is None:
-        _logger = logger
-    else:
-        _logger = given_logger
+    _logger = logger if given_logger is None else given_logger
     for process in processes:
         if process.pid != os.getpid():
             logger.info(f"Stopping process {process.pid}")

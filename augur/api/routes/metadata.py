@@ -15,7 +15,7 @@ import requests
 from augur.api.routes import AUGUR_API_VERSION
 from ..server import app, engine
 
-@app.route('/{}/metadata/repo_info'.format(AUGUR_API_VERSION), methods=["GET"])
+@app.route(f'/{AUGUR_API_VERSION}/metadata/repo_info', methods=["GET"])
 def get_repo_info():
     repo_info_sql = s.sql.text("""
         SELECT
@@ -54,7 +54,7 @@ def get_repo_info():
                 status=200,
                 mimetype="application/json")
 
-@app.route('/{}/metadata/contributions_count'.format(AUGUR_API_VERSION), methods=["GET"])
+@app.route(f'/{AUGUR_API_VERSION}/metadata/contributions_count', methods=["GET"])
 def contributions_count():
     repo_info_sql = s.sql.text("""
         select repo_git, count(*) as contributions from contributor_repo
@@ -68,7 +68,7 @@ def contributions_count():
                 status=200,
                 mimetype="application/json")
 
-@app.route('/{}/metadata/contributors_count'.format(AUGUR_API_VERSION), methods=["GET"])
+@app.route(f'/{AUGUR_API_VERSION}/metadata/contributors_count', methods=["GET"])
 def contributors_count():
     repo_info_sql = s.sql.text("""
         select repo_git, count(distinct(cntrb_id)) as contributors from contributor_repo

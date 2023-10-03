@@ -27,7 +27,7 @@ class AugurUUID:
 
     def write_int(self, source: int, start_byte: int, num_bytes: int):
         try:
-            source = int(source)
+            source = source
             source_bytes = source.to_bytes(num_bytes, "big")
         except ValueError:
             raise ValueError("The source must be an integer") from None
@@ -37,16 +37,14 @@ class AugurUUID:
         self.set_bytes(source_bytes, start_byte)
 
     def get_int(self, start_byte: int, num_bytes: int):
-        source_bytes = []
-
-        for i in range(start_byte, start_byte + num_bytes):
-            source_bytes.append(self.get_byte(i))
-
+        source_bytes = [
+            self.get_byte(i) for i in range(start_byte, start_byte + num_bytes)
+        ]
         return int.from_bytes(source_bytes, "big")
 
     def set_platform_id(self, platform_id: int):
         try:
-            platform_id = int(platform_id)
+            platform_id = platform_id
             platform_bytes = platform_id.to_bytes(1, "big")
         except ValueError:
             raise ValueError("The platform_id must be an integer") from None
@@ -69,7 +67,7 @@ class AugurUUID:
 
     def set_byte(self, index: int, value: int):
         try:
-            value = int(value)
+            value = value
             value_byte = value.to_bytes(1, "big")
         except ValueError:
             raise ValueError("The value must be an integer") from None
@@ -114,7 +112,7 @@ class AugurUUID:
         return str(self.__dict__())
 
     def __iter__(self):
-        return (byte for byte in self.bytes)
+        return iter(self.bytes)
 
 class GithubUUID(AugurUUID):
     struct = {
@@ -133,8 +131,6 @@ class UnresolvableUUID(GithubUUID):
     def __init__(self):
         super(GithubUUID, self).__init__(platform = 0)
 
-if __name__ == "__main__":
-    pass
     # Some examples of using this class:
     # id = GithubUUID()
 

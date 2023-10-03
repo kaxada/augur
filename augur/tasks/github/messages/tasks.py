@@ -27,16 +27,15 @@ def collect_github_messages(repo_git: str) -> None:
     with GithubTaskManifest(logger) as manifest:
 
         augur_db = manifest.augur_db
-            
+
         repo_id = augur_db.session.query(Repo).filter(
             Repo.repo_git == repo_git).one().repo_id
 
         owner, repo = get_owner_repo(repo_git)
         task_name = f"{owner}/{repo}: Message Task"
-        message_data = retrieve_all_pr_and_issue_messages(repo_git, logger, manifest.key_auth, task_name)
-        
-        if message_data:
-        
+        if message_data := retrieve_all_pr_and_issue_messages(
+            repo_git, logger, manifest.key_auth, task_name
+        ):
             process_messages(message_data, task_name, repo_id, logger, augur_db)
 
         else:
@@ -100,19 +99,10 @@ def process_messages(messages, task_name, repo_id, logger, augur_db):
     if len(messages) == 0:
         logger.info(f"{task_name}: No messages to process")
 
-    # create mapping from issue url to issue id of current issues
-    issue_url_to_id_map = {}
     issues = augur_db.session.query(Issue).filter(Issue.repo_id == repo_id).all()
-    for issue in issues:
-        issue_url_to_id_map[issue.issue_url] = issue.issue_id
-
-    # create mapping from pr url to pr id of current pull requests
-    pr_issue_url_to_id_map = {}
+    issue_url_to_id_map = {issue.issue_url: issue.issue_id for issue in issues}
     prs = augur_db.session.query(PullRequest).filter(PullRequest.repo_id == repo_id).all()
-    for pr in prs:
-        pr_issue_url_to_id_map[pr.pr_issue_url] = pr.pull_request_id
-
-
+    pr_issue_url_to_id_map = {pr.pr_issue_url: pr.pull_request_id for pr in prs}
     message_len = len(messages)
     for index, message in enumerate(messages):
 
@@ -187,7 +177,7 @@ def process_messages(messages, task_name, repo_id, logger, augur_db):
     message_string_fields = ["msg_text"]
     message_return_data = augur_db.insert_data(message_dicts, Message, message_natural_keys, 
                                                 return_columns=message_return_columns, string_fields=message_string_fields)
-    
+
 
     pr_message_ref_dicts = []
     issue_message_ref_dicts = []
@@ -224,11 +214,7 @@ def is_issue_message(html_url):
 def process_github_comment_contributors(message, tool_source, tool_version, data_source):
 
     contributor = extract_needed_contributor_data(message["user"], tool_source, tool_version, data_source)
-    if contributor:
-        message["cntrb_id"] = contributor["cntrb_id"]
-    else:
-        message["cntrb_id"] = None
-
+    message["cntrb_id"] = contributor["cntrb_id"] if contributor else None
     return message, contributor
 
 

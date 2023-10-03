@@ -58,7 +58,6 @@ def update_repo_log(session, repos_id,status):
 		session.execute_sql(log_message)
 	except Exception as e:
 		session.logger.error(f"Ran into error in update_repo_log: {e}")
-		pass
 
 def trim_commit(session, repo_id,commit):
 
@@ -161,15 +160,13 @@ def get_repo_commit_count(session, repo_git):
 	# Check if the .git directory exists
 	if not os.path.exists(repo_loc):
 		raise FileNotFoundError(f"The directory {absolute_path} does not exist.")
-	
+
 	# if there are no branches then the repo is empty
 	if count_branches(repo_loc) == 0:
 		return 0
 
 	check_commit_count_cmd = check_output(["git", "--git-dir", repo_loc, "rev-list", "--count", "HEAD"])
-	commit_count = int(check_commit_count_cmd)
-
-	return commit_count
+	return int(check_commit_count_cmd)
 
 def get_facade_weight_time_factor(session,repo_git):
 	repo = Repo.get_by_repo_git(session, repo_git)

@@ -44,7 +44,10 @@ def query_github_contributors(manifest, github_url):
 
     len_contributor_list = len(contributor_list)
 
-    manifest.logger.info("Count of contributors needing insertion: " + str(len_contributor_list) + "\n")
+    manifest.logger.info(
+        f"Count of contributors needing insertion: {len_contributor_list}"
+        + "\n"
+    )
 
     if len_contributor_list == 0:
         return
@@ -56,8 +59,8 @@ def query_github_contributors(manifest, github_url):
             #   i think that's it
             cntrb_url = ("https://api.github.com/users/" + repo_contributor['login'])
 
-            
-            manifest.logger.info("Hitting endpoint: " + cntrb_url + " ...\n")
+
+            manifest.logger.info(f"Hitting endpoint: {cntrb_url}" + " ...\n")
             #r = hit_api(session.oauths, cntrb_url, session.logger)
             #contributor = r.json()
 
@@ -76,7 +79,7 @@ def query_github_contributors(manifest, github_url):
                 canonical_email = contributor['email']
 
             #TODO get and store an owner id
-            
+
             #Generate ID for cntrb table
             #cntrb_id = AugurUUID(session.platform_id,contributor['id']).to_UUID()
             cntrb_id = GithubUUID()
@@ -121,10 +124,12 @@ def query_github_contributors(manifest, github_url):
             #insert cntrb to table.
             #session.logger.info(f"Contributor:  {cntrb}  \n")
             manifest.augur_db.insert_data(cntrb,Contributor,cntrb_natural_keys)
-            
+
         except Exception as e:
-            manifest.logger.error("Caught exception: {}".format(e))
-            manifest.logger.error("Cascading Contributor Anomalie from missing repo contributor data: {} ...\n".format(cntrb_url))
+            manifest.logger.error(f"Caught exception: {e}")
+            manifest.logger.error(
+                f"Cascading Contributor Anomalie from missing repo contributor data: {cntrb_url} ...\n"
+            )
             raise e
 
 # Get all the committer data for a repo.

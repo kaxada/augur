@@ -23,18 +23,28 @@ def test_add_repo_to_user_group(test_db_engine):
 
             data = {"repo_ids": [1, 2, 3], "repo_urls":["url 1", "url2", "url3"], "user_id": 2, "user_repo_group_id": 1, "user_group_ids": [1, 2], "user_group_names": ["test_group", "test_group_2"]}
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_repo_group_insert_statement(data["user_repo_group_id"]))
-
-            for i in range(0, len(data["repo_ids"])):
-                query_statements.append(get_repo_insert_statement(data["repo_ids"][i], data["user_repo_group_id"], data["repo_urls"][i]))
-
+            query_statements = [
+                clear_tables_statement,
+                get_repo_group_insert_statement(data["user_repo_group_id"]),
+            ]
+            query_statements.extend(
+                get_repo_insert_statement(
+                    data["repo_ids"][i],
+                    data["user_repo_group_id"],
+                    data["repo_urls"][i],
+                )
+                for i in range(0, len(data["repo_ids"]))
+            )
             query_statements.append(get_user_insert_statement(data["user_id"]))
 
-            for i in range(0, len(data["user_group_ids"])):
-                query_statements.append(get_user_group_insert_statement(data["user_id"], data["user_group_names"][i], data["user_group_ids"][i]))
-            
+            query_statements.extend(
+                get_user_group_insert_statement(
+                    data["user_id"],
+                    data["user_group_names"][i],
+                    data["user_group_ids"][i],
+                )
+                for i in range(0, len(data["user_group_ids"]))
+            )
             query = s.text("".join(query_statements))
 
             connection.execute(query)
@@ -82,14 +92,18 @@ def test_add_repo_to_user_group(test_db_engine):
             assert len(result) == 4
 
 
-            query = s.text("""SELECT * FROM "augur_operations"."user_repos" WHERE "group_id"={};""".format(data["user_group_ids"][0]))
+            query = s.text(
+                f"""SELECT * FROM "augur_operations"."user_repos" WHERE "group_id"={data["user_group_ids"][0]};"""
+            )
 
             result = connection.execute(query).fetchall()
             assert result is not None
             assert len(result) == 2
 
 
-            query = s.text("""SELECT * FROM "augur_operations"."user_repos" WHERE "group_id"={};""".format(data["user_group_ids"][0]))
+            query = s.text(
+                f"""SELECT * FROM "augur_operations"."user_repos" WHERE "group_id"={data["user_group_ids"][0]};"""
+            )
 
             result = connection.execute(query).fetchall()
             assert result is not None
@@ -112,9 +126,10 @@ def test_add_frontend_repos_with_invalid_repo(test_db_engine):
 
             data = {"user_id": 2, "repo_group_id": 5, "user_group_name": "test_group", "user_group_id": 1}
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_repo_group_insert_statement(data["repo_group_id"]))
+            query_statements = [
+                clear_tables_statement,
+                get_repo_group_insert_statement(data["repo_group_id"]),
+            ]
             query_statements.append(get_user_insert_statement(data["user_id"]))
             query_statements.append(get_user_group_insert_statement(data["user_id"], data["user_group_name"], data["user_group_id"]))
 
@@ -151,14 +166,15 @@ def test_add_frontend_repos_with_duplicates(test_db_engine):
 
             data = {"user_id": 2, "repo_group_id": DEFAULT_REPO_GROUP_ID, "user_group_name": "test_group", "user_group_id": 1}
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_repo_group_insert_statement(data["repo_group_id"]))
+            query_statements = [
+                clear_tables_statement,
+                get_repo_group_insert_statement(data["repo_group_id"]),
+            ]
             query_statements.append(get_user_insert_statement(data["user_id"]))
             query_statements.append(get_user_group_insert_statement(data["user_id"], data["user_group_name"], data["user_group_id"]))
 
             connection.execute("".join(query_statements))
-        
+
         add_keys_to_test_db(test_db_engine)
 
         with GithubTaskSession(logger, test_db_engine) as session:
@@ -197,16 +213,17 @@ def test_remove_frontend_repo(test_db_engine):
 
             data = {"user_id": 2, "repo_id": 5, "repo_group_id": DEFAULT_REPO_GROUP_ID, "user_group_name": "test_group", "user_group_id": 1}
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_repo_group_insert_statement(data["repo_group_id"]))
+            query_statements = [
+                clear_tables_statement,
+                get_repo_group_insert_statement(data["repo_group_id"]),
+            ]
             query_statements.append(get_user_insert_statement(data["user_id"]))
             query_statements.append(get_user_group_insert_statement(data["user_id"], data["user_group_name"], data["user_group_id"]))
             query_statements.append(get_repo_insert_statement(data["repo_id"], data["repo_group_id"], repo_url="url"))
             query_statements.append(get_user_repo_insert_statement(data["repo_id"], data["user_group_id"]))
-            
+
             connection.execute("".join(query_statements))
-        
+
         add_keys_to_test_db(test_db_engine)
 
         with GithubTaskSession(logger, test_db_engine) as session:
@@ -219,7 +236,7 @@ def test_remove_frontend_repo(test_db_engine):
 
                 repos = get_user_repos(connection)
                 assert len(repos) == 0
-        
+
             # remove invalid group
             result = UserRepo.delete(session, data["repo_id"], data["user_id"], "invalid group")
             assert result[1]["status"] == "Invalid group name"
@@ -251,9 +268,10 @@ def test_add_frontend_org_with_invalid_org(test_db_engine):
 
         with test_db_engine.connect() as connection:
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_repo_group_insert_statement(data["repo_group_id"]))
+            query_statements = [
+                clear_tables_statement,
+                get_repo_group_insert_statement(data["repo_group_id"]),
+            ]
             query_statements.append(get_user_insert_statement(data["user_id"]))
             query_statements.append(get_user_group_insert_statement(data["user_id"], data["user_group_name"], data["user_group_id"]))
 
@@ -292,9 +310,10 @@ def test_add_frontend_org_with_valid_org(test_db_engine):
 
             data = {"user_id": 2, "repo_group_id": DEFAULT_REPO_GROUP_ID, "org_name": VALID_ORG["org"], "user_group_name": "test_group", "user_group_id": 1}
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_repo_group_insert_statement(data["repo_group_id"]))
+            query_statements = [
+                clear_tables_statement,
+                get_repo_group_insert_statement(data["repo_group_id"]),
+            ]
             query_statements.append(get_user_insert_statement(data["user_id"]))
             query_statements.append(get_user_group_insert_statement(data["user_id"], data["user_group_name"], data["user_group_id"]))
 
@@ -304,7 +323,7 @@ def test_add_frontend_org_with_valid_org(test_db_engine):
 
         with GithubTaskSession(logger, test_db_engine) as session:
 
-            url = "https://github.com/{}/".format(data["org_name"])
+            url = f'https://github.com/{data["org_name"]}/'
             result = UserRepo.add_org_repos(session, url, data["user_id"], data["user_group_name"])
             assert result[1]["status"] == "Org repos added"
 
@@ -317,7 +336,7 @@ def test_add_frontend_org_with_valid_org(test_db_engine):
             user_repo_result = get_user_repos(connection)
             assert user_repo_result is not None
             assert len(user_repo_result) == VALID_ORG["repo_count"]
-            
+
     finally:
         with test_db_engine.connect() as connection:
             connection.execute(clear_tables_statement)

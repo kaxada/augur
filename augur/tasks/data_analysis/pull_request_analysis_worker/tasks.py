@@ -86,7 +86,7 @@ def pull_request_analysis_model(repo_git: str,logger,engine) -> None:
         logger.warning('No new open PRs in tables to analyze!\n')
         return
 
-    logger.info(f'Getting count of commits associated with every PR')
+    logger.info('Getting count of commits associated with every PR')
 
     # Get count of commits associated with every PR
     df_pr['commit_counts'] = df_pr.groupby(['pull_request_id'])['pr_cmt_id'].transform('count')
@@ -95,7 +95,7 @@ def pull_request_analysis_model(repo_git: str,logger,engine) -> None:
     # Find length of PR in days upto now
     df_pr['pr_length'] = (datetime.datetime.now() - df_pr['pr_created_at']).dt.days
 
-    logger.info(f'Fetching messages relating to PR')
+    logger.info('Fetching messages relating to PR')
 
     # Get sentiment score of all messages relating to the PR
     messages_SQL = s.sql.text("""
@@ -109,10 +109,10 @@ def pull_request_analysis_model(repo_git: str,logger,engine) -> None:
 
     df_message = pd.read_sql_query(messages_SQL, engine, params={'repo_id': repo_id})
 
-    logger.info(f'Mapping messages to PR, find comment & participants counts')
+    logger.info('Mapping messages to PR, find comment & participants counts')
 
     # Map PR to its corresponding messages
-    
+
     pr_ref_sql = s.sql.text("select * from augur_data.pull_request_message_ref")
     df_pr_ref = pd.read_sql_query(pr_ref_sql, engine)
     df_merge = pd.merge(df_pr, df_pr_ref, on='pull_request_id', how='left')
@@ -128,7 +128,7 @@ def pull_request_analysis_model(repo_git: str,logger,engine) -> None:
     df_merge['senti_score'] = get_senti_score(df_merge, 'msg_text', senti_models_dir, label=False,
                                               logger=logger)
 
-    logger.info(f'Calculated sentiment scores!')
+    logger.info('Calculated sentiment scores!')
 
     # Get count of associated comments
     df_merge['comment_counts'] = df_merge.groupby(['pull_request_id'])['msg_id'].transform('count')
@@ -160,7 +160,7 @@ def pull_request_analysis_model(repo_git: str,logger,engine) -> None:
     df_fin = df_fin1
     '''
 
-    logger.info(f'Fetching repo statistics')
+    logger.info('Fetching repo statistics')
 
     # Get repo info
     repo_sql = s.sql.text("""
@@ -181,7 +181,7 @@ def pull_request_analysis_model(repo_git: str,logger,engine) -> None:
 
     df = df.drop(['pr_created_at', 'pr_closed_at', 'pr_merged_at', 'pr_augur_contributor_id'], axis=1)
 
-    logger.info(f'Process fetched features')
+    logger.info('Process fetched features')
 
     # Label encode association levels of users
     df['assc_level'] = df['pr_src_author_association'].apply(encoder)
@@ -192,9 +192,9 @@ def pull_request_analysis_model(repo_git: str,logger,engine) -> None:
         ['commit_counts', 'comment_counts', 'pr_length', 'assc_level', 'comment_senti_score', 'watchers_count',
          'pr_accept_ratio']]
 
-    logger.info(f'All features collected!')
+    logger.info('All features collected!')
 
-    logger.info(f'Load pretrained model')
+    logger.info('Load pretrained model')
 
     # Load trained model
     model = joblib.load('trained_pr_model.pkl')
@@ -202,7 +202,7 @@ def pull_request_analysis_model(repo_git: str,logger,engine) -> None:
 
     df['merge_prob'] = [item[1] for item in merge_prob]
 
-    logger.info(f'Analysis done!')
+    logger.info('Analysis done!')
 
     # DEBUG:
     # df.to_csv(f'PRA_{repo_id}.csv',index=False)

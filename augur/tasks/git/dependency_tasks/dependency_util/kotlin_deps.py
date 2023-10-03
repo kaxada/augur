@@ -3,8 +3,7 @@ from pathlib import Path
 
 def get_files(path):
     p = Path(path)
-    files = list(p.glob('**/*.kt'))
-    return files
+    return list(p.glob('**/*.kt'))
 
 def get_deps_for_file(path):
     with open(path, 'r') as f:

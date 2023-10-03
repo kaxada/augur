@@ -5,11 +5,10 @@ import time
 
 def catch_operational_error(func):
 
-    attempts = 0
     error = None
     timeout = 240
 
-    while attempts < 4:
+    for attempts in range(4):
 
         # do the sleep here instead of instead of in the exception 
         # so it doesn't sleep after the last failed time
@@ -22,8 +21,6 @@ def catch_operational_error(func):
         except OperationalError as e:
             print(f"ERROR: {e}")
             error = str(e)
-
-        attempts += 1
 
     raise Exception(error)
 

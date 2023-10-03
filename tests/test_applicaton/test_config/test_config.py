@@ -323,8 +323,8 @@ def test_config_load_config_from_dict(test_db_config, test_db_engine):
                 dict_data = dict(row)
 
                 section_name = dict_data["section_name"]
-                
-                assert section_name in config_dict.keys() 
+
+                assert section_name in config_dict 
 
                 setting_name = dict_data["setting_name"]
                 value = dict_data["value"]

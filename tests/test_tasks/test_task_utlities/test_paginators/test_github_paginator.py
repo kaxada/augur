@@ -15,10 +15,7 @@ def key_auth():
     
     session = DatabaseSession(logger)
 
-    key_auth =  GithubRandomKeyAuth(session)
-
-    yield key_auth
-
+    yield GithubRandomKeyAuth(session)
     session.close()
 
 def test_github_paginator_get_item(key_auth):
@@ -78,12 +75,11 @@ def test_github_paginator_hit_api_timeout(key_auth):
 
 def test_github_paginator_len(key_auth):
 
-    owner = "chaoss"
     name = "whitepaper"
 
+    owner = "chaoss"
     contributors_url = (
-        f"https://api.github.com/repos/{owner}/{name}/" +
-        "contributors?state=all"
+        f"https://api.github.com/repos/{owner}/{name}/contributors?state=all"
     )
 
     contributors_list = GithubPaginator(contributors_url, key_auth, logger)
@@ -94,12 +90,11 @@ def test_github_paginator_len(key_auth):
 
 def test_github_paginator_get_item(key_auth):
 
-    owner = "chaoss"
     name = "whitepaper"
 
+    owner = "chaoss"
     contributors_url = (
-        f"https://api.github.com/repos/{owner}/{name}/" +
-        "contributors?state=all"
+        f"https://api.github.com/repos/{owner}/{name}/contributors?state=all"
     )
 
     contributors_list = GithubPaginator(contributors_url, key_auth, logger)

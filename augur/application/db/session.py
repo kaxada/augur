@@ -18,10 +18,7 @@ from augur.tasks.util.worker_util import remove_duplicate_dicts, remove_duplicat
 
 def remove_null_characters_from_string(string):
 
-    if string:
-        return string.replace("\x00", "\uFFFD")
-
-    return string
+    return string.replace("\x00", "\uFFFD") if string else string
 
 def remove_null_characters_from_strings_in_dict(data, fields):
 
@@ -50,7 +47,7 @@ def remove_null_characters_from_list_of_dicts(data_list, fields):
 class DatabaseSession(Session):
 
     def __init__(self, logger, engine=None, from_msg=None, **kwargs):
-    
+
         self.logger = logger
         self.engine = engine
         self.session = self
@@ -66,7 +63,7 @@ class DatabaseSession(Session):
             if from_msg:
                 logger.debug(f"ENGINE CREATE: {from_msg}")
             else:
-                logger.debug(f"ENGINE CREATE")
+                logger.debug("ENGINE CREATE")
 
         super().__init__(self.engine, **kwargs)
 
@@ -100,13 +97,13 @@ class DatabaseSession(Session):
 
     def insert_data(self, data: Union[List[dict], dict], table, natural_keys: List[str], return_columns: Optional[List[str]] = None, string_fields: Optional[List[str]] = None, on_conflict_update:bool = True) -> Optional[List[dict]]:
 
-        if isinstance(data, list) is False:
+        if not isinstance(data, list):
             
             # if a dict is passed to data then 
             # convert it to a list with one value
-            if isinstance(data, dict) is True:
+            if isinstance(data, dict):
                 data = [data]
-            
+
             else:
                 self.logger.info("Data must be a list or a dict")
                 return None
@@ -115,7 +112,7 @@ class DatabaseSession(Session):
             # self.logger.info("Gave no data to insert, returning...")
             return None
 
-        if isinstance(data[0], dict) is False: 
+        if not isinstance(data[0], dict): 
             self.logger.info("Must be list of dicts")
             return None
 
@@ -143,15 +140,11 @@ class DatabaseSession(Session):
 
         if on_conflict_update:
 
-            # create a dict that the on_conflict_do_update method requires to be able to map updates whenever there is a conflict. See sqlalchemy docs for more explanation and examples: https://docs.sqlalchemy.org/en/14/dialects/postgresql.html#updating-using-the-excluded-insert-values
-            setDict = {}
-            for key in data[0].keys():
-                    setDict[key] = getattr(stmnt.excluded, key)
-                
+            setDict = {key: getattr(stmnt.excluded, key) for key in data[0].keys()}
             stmnt = stmnt.on_conflict_do_update(
                 #This might need to change
                 index_elements=natural_keys,
-                
+
                 #Columns to be updated
                 set_ = setDict
             )
@@ -187,18 +180,17 @@ class DatabaseSession(Session):
 
                         attempts += 1
                         continue
-                    
+
                     raise e
 
                 except Exception as e:
-                    if(len(data) == 1):
+                    if (len(data) == 1):
                         raise e
-                    else:
-                        first_half = data[:len(data)//2]
-                        second_half = data[len(data)//2:]
+                    first_half = data[:len(data)//2]
+                    second_half = data[len(data)//2:]
 
-                        self.insert_data(first_half, natural_keys, return_columns, string_fields, on_conflict_update)
-                        self.insert_data(second_half, natural_keys, return_columns, string_fields, on_conflict_update)
+                    self.insert_data(first_half, natural_keys, return_columns, string_fields, on_conflict_update)
+                    self.insert_data(second_half, natural_keys, return_columns, string_fields, on_conflict_update)
 
             else:
                 self.logger.error("Unable to insert data in 10 attempts")
@@ -206,9 +198,9 @@ class DatabaseSession(Session):
 
             if deadlock_detected is True:
                 self.logger.error("Made it through even though Deadlock was detected")
-                    
+
             return "success"
-        
+
 
         # othewise it gets the requested return columns and returns them as a list of dicts
         while attempts < 10:
@@ -228,14 +220,13 @@ class DatabaseSession(Session):
                 raise e
 
             except Exception as e:
-                if(len(data) == 1):
+                if (len(data) == 1):
                     raise e
-                else:
-                    first_half = data[:len(data)//2]
-                    second_half = data[len(data)//2:]
+                first_half = data[:len(data)//2]
+                second_half = data[len(data)//2:]
 
-                    self.insert_data(first_half, natural_keys, return_columns, string_fields, on_conflict_update)
-                    self.insert_data(second_half, natural_keys, return_columns, string_fields, on_conflict_update)
+                self.insert_data(first_half, natural_keys, return_columns, string_fields, on_conflict_update)
+                self.insert_data(second_half, natural_keys, return_columns, string_fields, on_conflict_update)
 
         else:
             self.logger.error("Unable to insert and return data in 10 attempts")
@@ -244,10 +235,7 @@ class DatabaseSession(Session):
         if deadlock_detected is True:
             self.logger.error("Made it through even though Deadlock was detected")
 
-        return_data = []
-        for data_tuple in return_data_tuples:
-            return_data.append(dict(data_tuple))
-
+        return_data = [dict(data_tuple) for data_tuple in return_data_tuples]
         # using on confilict do nothing does not return the 
         # present values so this does gets the return values
         if not on_conflict_update:
@@ -267,11 +255,7 @@ class DatabaseSession(Session):
 
             for row in result:
 
-                return_dict = {}
-                for field in return_columns:
-
-                    return_dict[field] = getattr(row, field)
-
+                return_dict = {field: getattr(row, field) for field in return_columns}
                 return_data.append(return_dict)
 
 

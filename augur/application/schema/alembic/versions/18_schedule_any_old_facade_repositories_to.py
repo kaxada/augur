@@ -27,7 +27,9 @@ logger = logging.getLogger(__name__)
 def total_facade_reset():
     conn = op.get_bind()
 
-    conn.execute(text(f"""
+    conn.execute(
+        text(
+            """
 
     UPDATE augur_operations.collection_status
     SET facade_status='Pending', facade_task_id=NULL, facade_weight=NULL,commit_sum=NULL,facade_data_last_collected=NULL;
@@ -38,15 +40,17 @@ def total_facade_reset():
     UPDATE augur_operations.collection_status
     SET core_status='Pending', secondary_status='Pending', core_data_last_collected=NULL,secondary_data_last_collected=NULL,core_task_id=NULL,secondary_task_id=NULL
     WHERE issue_pr_sum IS NULL;
-    """))
+    """
+        )
+    )
 
-    
+        
 
     try:
         with DatabaseSession(logger) as session:
             config = AugurConfig(logger, session)
             facade_base_dir = config.get_section("Facade")['repo_directory']
-        
+
         #remove path
         path = pathlib.Path(facade_base_dir)
 

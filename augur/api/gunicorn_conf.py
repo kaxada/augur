@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 with DatabaseSession(logger) as session:
 
     augur_config = AugurConfig(logger, session)
-    
-        
+
+
     # ROOT_AUGUR_DIRECTORY = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
     # base_log_dir = ROOT_AUGUR_DIRECTORY + "/logs/"
@@ -36,12 +36,12 @@ with DatabaseSession(logger) as session:
     if ssl_bool is True: 
 
         workers = int(augur_config.get_value('Server', 'workers'))
-        bind = '%s:%s' % (augur_config.get_value("Server", "host"), augur_config.get_value("Server", "port"))
+        bind = f'{augur_config.get_value("Server", "host")}:{augur_config.get_value("Server", "port")}'
         timeout = int(augur_config.get_value('Server', 'timeout'))
         certfile = str(augur_config.get_value('Server', 'ssl_cert_file'))
         keyfile = str(augur_config.get_value('Server', 'ssl_key_file'))
-        
+
     else: 
         workers = int(augur_config.get_value('Server', 'workers'))
-        bind = '%s:%s' % (augur_config.get_value("Server", "host"), augur_config.get_value("Server", "port"))
+        bind = f'{augur_config.get_value("Server", "host")}:{augur_config.get_value("Server", "port")}'
         timeout = int(augur_config.get_value('Server', 'timeout'))

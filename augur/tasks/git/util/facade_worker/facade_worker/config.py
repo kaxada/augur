@@ -54,7 +54,7 @@ def get_database_args_from_env():
 
     db_str = os.getenv("AUGUR_DB")
     try:
-        db_json_file_location = os.getcwd() + "/db.config.json"
+        db_json_file_location = f"{os.getcwd()}/db.config.json"
     except FileNotFoundError:
         logger.error("\n\nPlease run augur commands in the root directory\n\n")
         sys.exit()
@@ -199,7 +199,7 @@ class FacadeSession(GithubTaskSession):
             self.execute_sql(log_message)
         except:
             pass
-    def insert_or_update_data(self, query, **bind_args)-> None:
+    def insert_or_update_data(self, query, **bind_args) -> None:
         """Provide deadlock detection for postgres updates, inserts, and deletions for facade.
 
         Returns:
@@ -207,7 +207,7 @@ class FacadeSession(GithubTaskSession):
         """
 
         attempts = 0
-        sleep_time_list = [x for x in range(1,11)]
+        sleep_time_list = list(range(1,11))
         deadlock_detected = False
         # if there is no data to return then it executes the insert the returns nothing
 
@@ -220,25 +220,23 @@ class FacadeSession(GithubTaskSession):
                     self.execute_sql(query)
                 break
             except OperationalError as e:
-                # print(str(e).split("Process")[1].split(";")[0])
-                if isinstance(e.orig, DeadlockDetected):
-                    deadlock_detected = True
-                    sleep_time = random.choice(sleep_time_list)
-                    self.logger.debug(f"Deadlock detected on query {query}...trying again in {round(sleep_time)} seconds")
-                    time.sleep(sleep_time)
-
-                    attempts += 1
-                    continue
-                else:
+                if not isinstance(e.orig, DeadlockDetected):
                     raise OperationalError(f"An OperationalError other than DeadlockDetected occurred: {e}") 
 
+                deadlock_detected = True
+                sleep_time = random.choice(sleep_time_list)
+                self.logger.debug(f"Deadlock detected on query {query}...trying again in {round(sleep_time)} seconds")
+                time.sleep(sleep_time)
+
+                attempts += 1
+                continue
         else:
-            self.logger.error(f"Unable to insert data in 10 attempts")
+            self.logger.error("Unable to insert data in 10 attempts")
             return
 
         if deadlock_detected is True:
-            self.logger.error(f"Made it through even though Deadlock was detected")
-                    
+            self.logger.error("Made it through even though Deadlock was detected")
+
             return
     def inc_repos_processed(self):
         self.repos_processed += 1
