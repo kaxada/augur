@@ -85,7 +85,7 @@ def facade_analysis_init_facade_task(repo_git):
         repo_id = repo.repo_id
 
         session.update_status('Running analysis')
-        session.log_activity('Info',f"Beginning analysis.")
+        session.log_activity('Info', "Beginning analysis.")
 
 
 @celery.task(base=AugurFacadeRepoCollectionTask)
@@ -224,7 +224,7 @@ def facade_start_contrib_analysis_task():
 
 #enable celery multithreading
 @celery.task(base=AugurFacadeRepoCollectionTask)
-def analyze_commits_in_parallel(repo_git, multithreaded: bool)-> None:
+def analyze_commits_in_parallel(repo_git, multithreaded: bool) -> None:
     """Take a large list of commit data to analyze and store in the database. Meant to be run in parallel with other instances of this task.
     """
 
@@ -238,7 +238,7 @@ def analyze_commits_in_parallel(repo_git, multithreaded: bool)-> None:
         start_date = session.get_setting('start_date')
 
         session.logger.info(f"Generating sequence for repo {repo_id}")
-        
+
         query = session.query(Repo).filter(Repo.repo_id == repo_id)
         repo = execute_session_query(query, 'one')
 
@@ -256,22 +256,19 @@ def analyze_commits_in_parallel(repo_git, multithreaded: bool)-> None:
         missing_commits = parent_commits - existing_commits
 
         session.log_activity('Debug',f"Commits missing from repo {repo_id}: {len(missing_commits)}")
-        
-        queue = []
-        if len(missing_commits) > 0:
-            #session.log_activity('Info','Type of missing_commits: %s' % type(missing_commits))
 
-            #encode the repo_id with the commit.
-            commits = list(missing_commits)
-            #Get all missing commits into one large list to split into task pools
-            queue.extend(commits)
-        else:
+        if len(missing_commits) <= 0:
             return
 
-        logger.info(f"Got to analysis!")
-        
+        #session.log_activity('Info','Type of missing_commits: %s' % type(missing_commits))
+
+        #encode the repo_id with the commit.
+        commits = list(missing_commits)
+        queue = list(commits)
+        logger.info("Got to analysis!")
+
         for count, commitTuple in enumerate(queue):
-            quarterQueue = int(len(queue) / 4)
+            quarterQueue = len(queue) // 4
 
             if quarterQueue == 0:
                 quarterQueue = 1 # prevent division by zero with integer math
@@ -284,7 +281,7 @@ def analyze_commits_in_parallel(repo_git, multithreaded: bool)-> None:
             #logger.info(f"Got to analysis!")
             absoulte_path = get_absolute_repo_path(session.repo_base_directory, repo.repo_id, repo.repo_path,repo.repo_name)
             repo_loc = (f"{absoulte_path}/.git")
-        
+
 
             analyze_commit(session, repo_id, repo_loc, commitTuple)
 
@@ -425,8 +422,6 @@ def generate_analysis_sequence(logger,repo_git, session):
 
     
     
-    analysis_sequence = []
-
     repo_list = s.sql.text("""SELECT repo_id,repo_group_id,repo_path,repo_name FROM repo 
     WHERE repo_git=:value""").bindparams(value=repo_git)
     repos = session.fetchall_data_from_sql_text(repo_list)
@@ -437,17 +432,13 @@ def generate_analysis_sequence(logger,repo_git, session):
 
     repo_id = repo_ids.pop(0)
 
-    analysis_sequence.append(facade_analysis_init_facade_task.si(repo_git))
-
-    analysis_sequence.append(trim_commits_facade_task.si(repo_git))
-
-    analysis_sequence.append(analyze_commits_in_parallel.si(repo_git,True))
-
-    analysis_sequence.append(trim_commits_post_analysis_facade_task.si(repo_git))
-
-    
-    analysis_sequence.append(facade_analysis_end_facade_task.si())
-    
+    analysis_sequence = [
+        facade_analysis_init_facade_task.si(repo_git),
+        trim_commits_facade_task.si(repo_git),
+        analyze_commits_in_parallel.si(repo_git, True),
+        trim_commits_post_analysis_facade_task.si(repo_git),
+        facade_analysis_end_facade_task.si(),
+    ]
     logger.info(f"Analysis sequence: {analysis_sequence}")
     return analysis_sequence
 
@@ -497,7 +488,7 @@ def facade_phase(repo_git):
         query = session.query(CollectionStatus).filter(CollectionStatus.repo_id == repo_id)
 
         status = execute_session_query(query,'one')
-        
+
         # Figure out what we need to do
         limited_run = session.limited_run
         run_analysis = session.run_analysis
@@ -505,33 +496,30 @@ def facade_phase(repo_git):
         #force_analysis = session.force_analysis
         run_facade_contributors = session.run_facade_contributors
 
-        facade_sequence = []
         facade_core_collection = []
 
-        if not limited_run or (limited_run and pull_repos):
+        if not limited_run or pull_repos:
             facade_core_collection.append(git_repo_updates_facade_task.si(repo_git))
-        
+
         facade_core_collection.append(git_update_commit_count_weight.si(repo_git))
 
         #Generate commit analysis task order.
-        if not limited_run or (limited_run and run_analysis):
+        if not limited_run or run_analysis:
             facade_core_collection.extend(generate_analysis_sequence(logger,repo_git,session))
 
         #Generate contributor analysis task group.
-        if not limited_run or (limited_run and run_facade_contributors):
+        if not limited_run or run_facade_contributors:
             facade_core_collection.append(generate_contributor_sequence(logger,repo_git,session))
 
 
-        #These tasks need repos to be cloned by facade before they can work.
-        facade_sequence.append(
+        facade_sequence = [
             group(
                 chain(*facade_core_collection),
                 process_dependency_metrics.si(repo_git),
                 process_libyear_dependency_metrics.si(repo_git),
-                process_scc_value_metrics.si(repo_git)
+                process_scc_value_metrics.si(repo_git),
             )
-        )
-
+        ]
         logger.info(f"Facade sequence: {facade_sequence}")
         return chain(*facade_sequence)
 
@@ -552,9 +540,6 @@ def generate_non_repo_domain_facade_tasks(logger):
         fix_affiliations = session.fix_affiliations
         force_invalidate_caches = session.force_invalidate_caches
         rebuild_caches = session.rebuild_caches
-        #if abs((datetime.datetime.strptime(session.cfg.get_setting('aliases_processed')[:-3], 
-            # '%Y-%m-%d %I:%M:%S.%f') - datetime.datetime.now()).total_seconds()) // 3600 > int(session.cfg.get_setting(
-            #   'update_frequency')) else 0
         force_invalidate_caches = session.force_invalidate_caches
         create_xlsx_summary_files = session.create_xlsx_summary_files
         multithreaded = session.multithreaded
@@ -570,7 +555,7 @@ def generate_non_repo_domain_facade_tasks(logger):
             # This method is also a major performance bottleneck with little value.
 
         #session.logger.info(session.cfg)
-        if not limited_run or (limited_run and fix_affiliations):
+        if not limited_run or fix_affiliations:
             #facade_sequence.append(fill_empty_affiliations_facade_task.si().on_error(facade_error_handler.s()))#fill_empty_affiliations(session)
             logger.info("Fill empty affiliations is deprecated.")
             # deprecated because the UI component of facade where affiliations would need 
@@ -581,7 +566,7 @@ def generate_non_repo_domain_facade_tasks(logger):
         if force_invalidate_caches:
             facade_sequence.append(invalidate_caches_facade_task.si().on_error(facade_error_handler.s()))#invalidate_caches(session.cfg)
 
-        if not limited_run or (limited_run and rebuild_caches):
+        if not limited_run or rebuild_caches:
             facade_sequence.append(rebuild_unknown_affiliation_and_web_caches_facade_task.si().on_error(facade_error_handler.s()))#rebuild_unknown_affiliation_and_web_caches(session.cfg)
-        
+
         return facade_sequence

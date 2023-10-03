@@ -315,8 +315,7 @@ class User(Base):
         if not password:
             return False
 
-        result = check_password_hash(self.login_hashword, password)
-        return result
+        return check_password_hash(self.login_hashword, password)
 
     @staticmethod
     def get_user(session, username: str):
@@ -325,8 +324,7 @@ class User(Base):
             return None
 
         try:
-            user = session.query(User).filter(User.login_name == username).one()
-            return user
+            return session.query(User).filter(User.login_name == username).one()
         except NoResultFound:
             return None
 
@@ -336,8 +334,7 @@ class User(Base):
         if not isinstance(user_id, int):
             return None
         try:
-            user = session.query(User).filter(User.user_id == user_id).one()
-            return user
+            return session.query(User).filter(User.user_id == user_id).one()
         except NoResultFound:
             return None
 
@@ -553,9 +550,9 @@ class User(Base):
         with DatabaseSession(logger) as session:
             controller = RepoLoadController(session)
 
-        result = controller.get_repo_count(source="group", group_name=group_name, user=self, search=search)
-
-        return result
+        return controller.get_repo_count(
+            source="group", group_name=group_name, user=self, search=search
+        )
 
     def invalidate_session(self, token):
 
@@ -655,8 +652,11 @@ class UserGroup(Base):
             "user_id": user_id
         }
 
-        user_group = session.query(UserGroup).filter(UserGroup.user_id == user_id, UserGroup.name == group_name).first()
-        if user_group:
+        if (
+            user_group := session.query(UserGroup)
+            .filter(UserGroup.user_id == user_id, UserGroup.name == group_name)
+            .first()
+        ):
             return False, {"status": "Group already exists"}
 
         try:
@@ -800,8 +800,8 @@ class UserRepo(Base):
         if group_id is None:
 
             group_id = UserGroup.convert_group_name_to_id(session, user_id, group_name)
-            if group_id is None:
-                return False, {"status": "Invalid group name"}
+        if group_id is None:
+            return False, {"status": "Invalid group name"}
 
         if not from_org_list:
             result = Repo.is_valid_github_repo(session, url)
@@ -813,27 +813,30 @@ class UserRepo(Base):
         # if no repo_group_id is passed then assign the repo to the frontend repo group
         if repo_group_id is None:
 
-            frontend_repo_group = session.query(RepoGroup).filter(RepoGroup.rg_name == FRONTEND_REPO_GROUP_NAME).first()
-            if not frontend_repo_group:
+            if (
+                frontend_repo_group := session.query(RepoGroup)
+                .filter(RepoGroup.rg_name == FRONTEND_REPO_GROUP_NAME)
+                .first()
+            ):
+                repo_group_id = frontend_repo_group.repo_group_id
+
+
+            else:
                 return False, {"status": "Could not find repo group with name 'Frontend Repos'", "repo_url": url}
 
-            repo_group_id = frontend_repo_group.repo_group_id
-
-
-        repo_id = Repo.insert(session, url, repo_group_id, "Frontend", repo_type)
-        if not repo_id:
+        if repo_id := Repo.insert(
+            session, url, repo_group_id, "Frontend", repo_type
+        ):
+            return (
+                (True, {"status": "Repo Added", "repo_url": url})
+                if (result := UserRepo.insert(session, repo_id, group_id))
+                else (
+                    False,
+                    {"status": "repo_user insertion failed", "repo_url": url},
+                )
+            )
+        else:
             return False, {"status": "Repo insertion failed", "repo_url": url}
-
-        result = UserRepo.insert(session, repo_id, group_id)
-        if not result:
-            return False, {"status": "repo_user insertion failed", "repo_url": url}
-
-        #collection_status records are now only added during collection -IM 5/1/23
-        #status = CollectionStatus.insert(session, repo_id)
-        #if not status:
-        #    return False, {"status": "Failed to create status for repo", "repo_url": url}
-
-        return True, {"status": "Repo Added", "repo_url": url}
 
     @staticmethod
     def delete(session, repo_id:int, user_id:int, group_name:str) -> dict:
@@ -892,7 +895,9 @@ class UserRepo(Base):
         try:
             repo_group = RepoGroup.get_by_name(session, owner)
         except MultipleResultsFound:
-            print("Error: Multiple Repo Groups with the same name found with name: {}".format(owner))
+            print(
+                f"Error: Multiple Repo Groups with the same name found with name: {owner}"
+            )
 
             return False, {"status": "Multiple Repo Groups with the same name found"}
 
@@ -1183,7 +1188,4 @@ class CollectionStatus(Base):
 
         session.logger.info(f"Trying to insert repo \n issue and pr sum: {record['issue_pr_sum']}")
 
-        if not result:
-            return False
-
-        return True
+        return bool(result)

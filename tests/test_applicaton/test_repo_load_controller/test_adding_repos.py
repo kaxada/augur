@@ -23,9 +23,10 @@ def test_add_frontend_repos_with_invalid_repo(test_db_engine):
 
             data = {"user_id": 2, "repo_group_id": 5, "user_group_name": "test_group", "user_group_id": 1}
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_repo_group_insert_statement(data["repo_group_id"]))
+            query_statements = [
+                clear_tables_statement,
+                get_repo_group_insert_statement(data["repo_group_id"]),
+            ]
             query_statements.append(get_user_insert_statement(data["user_id"]))
             query_statements.append(get_user_group_insert_statement(data["user_id"], data["user_group_name"], data["user_group_id"]))
 
@@ -61,9 +62,7 @@ def test_add_cli_repos_with_invalid_repo_group_id(test_db_engine):
             data = {"user_id": CLI_USER_ID, "repo_group_id": 5, "org_name": "operate-first", "repo_name": "operate-first-twitter", "user_group_name": "test_group", "user_group_id": 1}
             url = f"https://github.com/{data['org_name']}/{data['repo_name']}"
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-
+            query_statements = [clear_tables_statement]
             connection.execute("".join(query_statements))
 
         add_keys_to_test_db(test_db_engine)
@@ -95,9 +94,10 @@ def test_add_cli_repos_with_duplicates(test_db_engine):
             data = {"user_id": CLI_USER_ID, "repo_group_id": 5, "org_name": "operate-first", "repo_name": "operate-first-twitter", "user_group_name": "test_group", "user_group_id": 1}
             url = f"https://github.com/{data['org_name']}/{data['repo_name']}"
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_repo_group_insert_statement(data["repo_group_id"]))
+            query_statements = [
+                clear_tables_statement,
+                get_repo_group_insert_statement(data["repo_group_id"]),
+            ]
             query_statements.append(get_user_insert_statement(data["user_id"]))
             query_statements.append(get_user_group_insert_statement(data["user_id"], data["user_group_name"], data["user_group_id"]))
 
@@ -140,14 +140,15 @@ def test_add_frontend_repos_with_duplicates(test_db_engine):
 
             data = {"user_id": 2, "repo_group_id": DEFAULT_REPO_GROUP_IDS[0], "user_group_name": "test_group", "user_group_id": 1}
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_repo_group_insert_statement(data["repo_group_id"]))
+            query_statements = [
+                clear_tables_statement,
+                get_repo_group_insert_statement(data["repo_group_id"]),
+            ]
             query_statements.append(get_user_insert_statement(data["user_id"]))
             query_statements.append(get_user_group_insert_statement(data["user_id"], data["user_group_name"], data["user_group_id"]))
 
             connection.execute("".join(query_statements))
-        
+
         add_keys_to_test_db(test_db_engine)
 
         with GithubTaskSession(logger, test_db_engine) as session:
@@ -189,16 +190,17 @@ def test_remove_frontend_repo(test_db_engine):
 
             data = {"user_id": 2, "repo_id": 5, "repo_group_id": DEFAULT_REPO_GROUP_IDS[0], "user_group_name": "test_group", "user_group_id": 1}
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_repo_group_insert_statement(data["repo_group_id"]))
+            query_statements = [
+                clear_tables_statement,
+                get_repo_group_insert_statement(data["repo_group_id"]),
+            ]
             query_statements.append(get_user_insert_statement(data["user_id"]))
             query_statements.append(get_user_group_insert_statement(data["user_id"], data["user_group_name"], data["user_group_id"]))
             query_statements.append(get_repo_insert_statement(data["repo_id"], data["repo_group_id"], repo_url="url"))
             query_statements.append(get_user_repo_insert_statement(data["repo_id"], data["user_group_id"]))
-            
+
             connection.execute("".join(query_statements))
-        
+
         add_keys_to_test_db(test_db_engine)
 
         with GithubTaskSession(logger, test_db_engine) as session:
@@ -213,7 +215,7 @@ def test_remove_frontend_repo(test_db_engine):
 
                 repos = get_user_repos(connection)
                 assert len(repos) == 0
-        
+
             # remove invalid group
             result = controller.remove_frontend_repo(data["repo_id"], data["user_id"], "invalid group")
             assert result["status"] == "Invalid group name"

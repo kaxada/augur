@@ -303,9 +303,7 @@ class GithubPaginator(collections.abc.Sequence):
             return
 
         # yield the first page data
-        for data in data_list:
-            yield data
-
+        yield from data_list
         while 'next' in response.links.keys():
             next_page = response.links['next']['url']
 
@@ -316,8 +314,7 @@ class GithubPaginator(collections.abc.Sequence):
                 self.logger.debug("Failed to retrieve the data even though 10 attempts were given")
                 return
 
-            for data in data_list:
-                yield data
+            yield from data_list
 
     def iter_pages(self) -> Generator[Tuple[Optional[List[dict]], int], None, None]:
         """Provide data from Github API via a generator that yields a page of dicts at a time.
@@ -388,17 +385,17 @@ class GithubPaginator(collections.abc.Sequence):
             # if api returns a status of 204 No Content then return empty list
             if response.status_code == 204:
                 return [], response, GithubApiResult.SUCCESS
-            
-            
+
+
             page_data = parse_json_response(self.logger, response)
 
 
             # if the data is a list, then return it and the response
-            if isinstance(page_data, list) is True:
+            if isinstance(page_data, list):
                 return page_data, response, GithubApiResult.SUCCESS
 
-            # if the data is a dict then call process_dict_response, and 
-            if isinstance(page_data, dict) is True:
+            # if the data is a dict then call process_dict_response, and
+            if isinstance(page_data, dict):
                 dict_processing_result = process_dict_response(self.logger, response, page_data)
 
                 if dict_processing_result == GithubApiResult.NEW_RESULT:
@@ -415,7 +412,7 @@ class GithubPaginator(collections.abc.Sequence):
                     num_attempts = 0
                     continue                    
 
-            if isinstance(page_data, str) is True:
+            if isinstance(page_data, str):
                 str_processing_result: Union[str, List[dict]] = self.process_str_response(page_data)
 
                 if isinstance(str_processing_result, list):
@@ -476,7 +473,7 @@ class GithubPaginator(collections.abc.Sequence):
                 Or a list of dicts if the json was parasable
         """
         self.logger.info(f"Warning! page_data was string: {page_data}\n")
-        
+
         if "<!DOCTYPE html>" in page_data:
             self.logger.info("HTML was returned, trying again...\n")
             return GithubApiResult.HTML
@@ -486,8 +483,7 @@ class GithubPaginator(collections.abc.Sequence):
             return GithubApiResult.EMPTY_STRING
 
         try:
-            list_of_dict_page_data = json.loads(page_data)
-            return list_of_dict_page_data
+            return json.loads(page_data)
         except TypeError:
             return "failed_to_parse_json"
 

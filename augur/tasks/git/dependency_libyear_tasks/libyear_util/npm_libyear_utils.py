@@ -2,11 +2,9 @@ import os, re
 import requests
 
 def get_NPM_data(package):
-    url = "https://registry.npmjs.org/%s" % package
+    url = f"https://registry.npmjs.org/{package}"
     r = requests.get(url)
-    if r.status_code < 400:
-        return r.json()
-    return {}
+    return r.json() if r.status_code < 400 else {}
 
 
 def clean_version(version):
@@ -60,10 +58,7 @@ def get_lastest_minor(version, data):
 
 
 def get_npm_release_date(data, version):
-    release_time = data['time'][version]
-    if release_time:
-        return release_time
-    return None
+    return release_time if (release_time := data['time'][version]) else None
 
 
 def get_npm_latest_version(data):

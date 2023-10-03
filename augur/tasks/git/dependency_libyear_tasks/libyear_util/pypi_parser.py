@@ -48,29 +48,27 @@ def parse_requirement_txt(file_handle):
         #Try UTF-16 as a shot in the dark
         manifest = file_handle.read().decode("utf-16")
 
-    deps=list()
+    deps = []
     for line in manifest.split('\n'):
         matches = require_regrex.search(line.replace("'",""))
         if not matches:
             continue
         Dict = {'name': matches[1], 'requirement': matches[2], 'type': 'runtime', 'package': 'PYPI'}
-        deps.append(Dict)  
+        deps.append(Dict)
     return deps
 
 
 def map_dependencies(info):
-    if type(info) is dict:
-
-        if "version" in info:
-            return info['version']
-        elif 'git' in info:
-            return info['git']+'#'+info['ref']
-    else:            
+    if type(info) is not dict:
         return info
+    if "version" in info:
+        return info['version']
+    elif 'git' in info:
+        return info['git']+'#'+info['ref']
 
 
 def map_dependencies_pipfile(packages, type):
-    deps = list()
+    deps = []
     if not packages:
         return []
     for name, info in packages.items():
@@ -86,15 +84,15 @@ def parse_pipfile(file_handle):
 
 def parse_pipfile_lock(file_object):
     manifest = json.load(file_object)
-    deps = list()
+    deps = []
     for group,dependencies in manifest.items():
-        
+
         if group == "_meta":
             continue
         if group == 'default':
             group = 'runtime'
         for name,info in dependencies.items():
-            
+
             Dict = {'name': name, 'requirement': map_dependencies(info), 'type': group, 'package': 'PYPI'}
             deps.append(Dict)
     return deps         
@@ -103,7 +101,7 @@ def parse_pipfile_lock(file_object):
 def parse_setup_py(file_handle):
     manifest= file_handle.read()
 
-    deps = list()
+    deps = []
 
     # for single_line in manifest:
     # matchh = re.match(INSTALL_REGEXP, manifest)
@@ -112,16 +110,16 @@ def parse_setup_py(file_handle):
     if not matchh:
         return deps
 
-    
+
     for line in re.sub(r"',(\s)?'", r"\n", matchh[1]).split("\n"):
-        
+
         if re.search(r'^#', line):
             continue
         matchhh = re.search(REQUIRE_REGEXP,line)
-    
+
         if not matchhh:
             continue
-        
+
         Dict = {'name': matchhh[1], 'requirement': matchhh[2], 'type': 'runtime', 'package': 'PYPI'}
         deps.append(Dict)
     return deps
@@ -140,7 +138,7 @@ def parse_poetry(file_handle):
 
 def parse_poetry_lock(file_handle):
     manifest = toml.load(file_handle)
-    deps = list()
+    deps = []
     group = 'runtime'
     for package in manifest['package']:
         req = None
@@ -160,7 +158,7 @@ def parse_poetry_lock(file_handle):
 # Pip dependencies can be embedded in conda environment files
 def parse_conda(file_handle):
     contents = yaml.safe_load(file_handle)
-    deps = list()
+    deps = []
     pip = None
     if not contents:
         return []
@@ -177,7 +175,7 @@ def parse_conda(file_handle):
         if not matches:
             continue
         Dict = {'name': matches[1], 'requirement': matches[2], 'type': 'runtime', 'package': 'PYPI'}
-        deps.append(Dict)  
+        deps.append(Dict)
     return deps    
 
 

@@ -25,7 +25,7 @@ def upgrade():
     with DatabaseSession(logger) as session:
         config = AugurConfig(logger,session)
         config_dict = config.load_config()
-        
+
         #Update the missing fields of the celery section in the config
         section = config_dict.get("Celery")
 
@@ -33,19 +33,23 @@ def upgrade():
         if section:
             if 'worker_process_vmem_cap' not in section.keys():
                 section['worker_process_vmem_cap'] = 0.25
-            
+
             if 'refresh_materialized_views_interval_in_days' not in section.keys():
                 section['refresh_materialized_views_interval_in_days'] = 7
         else:
             section = config.default_config["Celery"]
-        
+
         config.add_section_from_json("Celery", section)
 
         #delete old setting
-        session.execute_sql(text(f"""
+        session.execute_sql(
+            text(
+                """
             DELETE FROM augur_operations.config
             WHERE section_name='Celery' AND setting_name='concurrency';
-        """))
+        """
+            )
+        )
 
 
 
@@ -53,14 +57,22 @@ def downgrade():
 
     conn = op.get_bind()
 
-    conn.execute(text(f"""
+    conn.execute(
+        text(
+            """
         DELETE FROM augur_operations.config
         WHERE section_name='Celery' AND (setting_name='worker_process_vmem_cap' OR setting_name='refresh_materialized_views_interval_in_days');
-    """))
+    """
+        )
+    )
 
     try:
-        conn.execute(text(f"""
+        conn.execute(
+            text(
+                """
             INSERT INTO augur_operations.config (section_name,setting_name,value,type) VALUES ('Celery','concurrency',12,'int');
-        """))
+        """
+            )
+        )
     except:
         pass

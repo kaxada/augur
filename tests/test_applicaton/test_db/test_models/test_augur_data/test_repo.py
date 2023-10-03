@@ -29,13 +29,13 @@ def test_parse_github_org_url():
 
     with DatabaseSession(logger) as session:
 
-        assert Repo.parse_github_org_url("hello world") == None, None
+        assert Repo.parse_github_org_url("hello world") is None, None
         assert Repo.parse_github_org_url("https://github.com/chaoss/") == "chaoss"
         assert Repo.parse_github_org_url("https://github.com/chaoss") == "chaoss"
-        assert Repo.parse_github_org_url("https://github.com/hello124/augur") == None
-        assert Repo.parse_github_org_url("https://github.com//augur") == None, None
-        assert Repo.parse_github_org_url("https://github.com//") == None
-        assert Repo.parse_github_org_url("https://github.com/chaoss/augur") == None
+        assert Repo.parse_github_org_url("https://github.com/hello124/augur") is None
+        assert Repo.parse_github_org_url("https://github.com//augur") is None, None
+        assert Repo.parse_github_org_url("https://github.com//") is None
+        assert Repo.parse_github_org_url("https://github.com/chaoss/augur") is None
 
 
 def test_is_valid_github_repo():
@@ -68,15 +68,16 @@ def test_insert_repo(test_db_engine):
 
         with test_db_engine.connect() as connection:
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_repo_group_insert_statement(data["rg_id"]))
+            query_statements = [
+                clear_tables_statement,
+                get_repo_group_insert_statement(data["rg_id"]),
+            ]
             query = s.text("".join(query_statements))
 
             connection.execute(query)
 
         with DatabaseSession(logger, test_db_engine) as session:
-            
+
             assert Repo.insert(session, data["repo_urls"][0], data["rg_id"], data["tool_source"]) is not None
             assert Repo.insert(session, data["repo_urls"][1], data["rg_id"], data["tool_source"]) is not None
 

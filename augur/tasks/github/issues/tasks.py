@@ -25,7 +25,7 @@ development = get_development_flag()
 def collect_issues(repo_git : str) -> int:
 
 
-    logger = logging.getLogger(collect_issues.__name__) 
+    logger = logging.getLogger(collect_issues.__name__)
     with GithubTaskManifest(logger) as manifest:
 
         augur_db = manifest.augur_db
@@ -33,7 +33,7 @@ def collect_issues(repo_git : str) -> int:
         logger.info(f'this is the manifest.key_auth value: {str(manifest.key_auth)}')
 
         try:
-        
+
             query = augur_db.session.query(Repo).filter(Repo.repo_git == repo_git)
             repo_obj = execute_session_query(query, 'one')
             repo_id = repo_obj.repo_id
@@ -50,11 +50,10 @@ def collect_issues(repo_git : str) -> int:
             #     pass 
 
             owner, repo = get_owner_repo(repo_git)
-        
-            issue_data = retrieve_all_issue_data(repo_git, logger, manifest.key_auth)
-            #issue_data = retrieve_all_issue_data(repo_git, logger, the_key)
 
-            if issue_data:
+            if issue_data := retrieve_all_issue_data(
+                repo_git, logger, manifest.key_auth
+            ):
                 total_issues = len(issue_data)
                 process_issues(issue_data, f"{owner}/{repo}: Issue task", repo_id, logger, augur_db)
 
@@ -148,7 +147,7 @@ def process_issues(issues, task_name, repo_id, logger, augur_db) -> None:
                                             "assignees": issue_assignees,
                                             }     
 
-    if len(issue_dicts) == 0:
+    if not issue_dicts:
         print("No issues found while processing")  
         return
 
@@ -158,7 +157,7 @@ def process_issues(issues, task_name, repo_id, logger, augur_db) -> None:
     # insert contributors from these issues
     logger.info(f"{task_name}: Inserting {len(contributors)} contributors")
     augur_db.insert_data(contributors, Contributor, ["cntrb_id"])
-                        
+
 
     # insert the issues into the issues table. 
     # issue_urls are gloablly unique across github so we are using it to determine whether an issue we collected is already in the table
@@ -178,6 +177,8 @@ def process_issues(issues, task_name, repo_id, logger, augur_db) -> None:
     # assignees that corelate to the issue that was inserted labels 
     issue_label_dicts = []
     issue_assignee_dicts = []
+    # add the issue id to the lables and assignees, then add them to a list of dicts that will be inserted soon
+    dict_key = "issue_id"
     for data in issue_return_data:
 
         issue_url = data["issue_url"]
@@ -189,8 +190,6 @@ def process_issues(issues, task_name, repo_id, logger, augur_db) -> None:
             logger.info(f"{task_name}: Cold not find other issue data. This should never happen. Error: {e}")
 
 
-        # add the issue id to the lables and assignees, then add them to a list of dicts that will be inserted soon
-        dict_key = "issue_id"
         issue_label_dicts += add_key_value_pair_to_dicts(other_issue_data["labels"], "issue_id", issue_id)
         issue_assignee_dicts += add_key_value_pair_to_dicts(other_issue_data["assignees"], "issue_id", issue_id)
 
@@ -213,12 +212,9 @@ def process_issues(issues, task_name, repo_id, logger, augur_db) -> None:
 
 def process_issue_contributors(issue, tool_source, tool_version, data_source):
 
-    contributors = []
-
     issue_cntrb = extract_needed_contributor_data(issue["user"], tool_source, tool_version, data_source)
     issue["cntrb_id"] = issue_cntrb["cntrb_id"]
-    contributors.append(issue_cntrb)
-
+    contributors = [issue_cntrb]
     for assignee in issue["assignees"]:
 
         issue_assignee_cntrb = extract_needed_contributor_data(assignee, tool_source, tool_version, data_source)

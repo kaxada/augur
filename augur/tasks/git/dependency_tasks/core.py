@@ -59,68 +59,66 @@ def deps_model(session, repo_id,repo_git,repo_path,repo_name):
 """
 
 def generate_scorecard(session,repo_id,path):
-    """Runs scorecard on repo and stores data in database
+        """Runs scorecard on repo and stores data in database
         :param repo_id: Repository ID
         :param path: URL path of the Repostiory
     """
-    session.logger.info('Generating scorecard data for repo')
-    session.logger.info(f"Repo ID: {repo_id}, Path: {path}")
+        session.logger.info('Generating scorecard data for repo')
+        session.logger.info(f"Repo ID: {repo_id}, Path: {path}")
 
-    # we convert relative path in the format required by scorecard like github.com/chaoss/augur
-    # raw_path,_ = path.split('-')
-    # scorecard_repo_path = raw_path[2:]
-    path = path[8:]
-    if path[-4:] == '.git':
-        path = path.replace(".git", "")
-    command = '--repo='+ path
-    
-    #this is path where our scorecard project is located
-    path_to_scorecard = os.environ['HOME'] + '/scorecard'
+        # we convert relative path in the format required by scorecard like github.com/chaoss/augur
+        # raw_path,_ = path.split('-')
+        # scorecard_repo_path = raw_path[2:]
+        path = path[8:]
+        if path[-4:] == '.git':
+            path = path.replace(".git", "")
+        command = f'--repo={path}'
 
-    #setting the environmental variable which is required by scorecard
-    key_handler = GithubApiKeyHandler(session)       
-    os.environ['GITHUB_AUTH_TOKEN'] = key_handler.get_random_key()
-    
-    required_output = parse_json_from_subprocess_call(session.logger,['./scorecard', command, '--format=json'],cwd=path_to_scorecard)
-    
-    session.logger.info('adding to database...')
-    session.logger.debug(f"output: {required_output}")
+        #this is path where our scorecard project is located
+        path_to_scorecard = os.environ['HOME'] + '/scorecard'
 
-    if not required_output['checks']:
-        session.logger.info('No scorecard checks found!')
-        return
-    
-    #Store the overall score first
-    to_insert = []
-    overall_deps_scorecard = {
-        'repo_id': repo_id,
-        'name': 'OSSF_SCORECARD_AGGREGATE_SCORE',
-        'scorecard_check_details': required_output['repo'],
-        'score': required_output['score'],
-        'tool_source': 'scorecard_model',
-        'tool_version': '0.43.9',
-        'data_source': 'Git',
-        'data_collection_date': datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
-    }
-    to_insert.append(overall_deps_scorecard)
-   # session.insert_data(overall_deps_scorecard, RepoDepsScorecard, ["repo_id","name"])
+        #setting the environmental variable which is required by scorecard
+        key_handler = GithubApiKeyHandler(session)
+        os.environ['GITHUB_AUTH_TOKEN'] = key_handler.get_random_key()
 
-    #Store misc data from scorecard in json field. 
-    for check in required_output['checks']:
-        repo_deps_scorecard = {
+        required_output = parse_json_from_subprocess_call(session.logger,['./scorecard', command, '--format=json'],cwd=path_to_scorecard)
+
+        session.logger.info('adding to database...')
+        session.logger.debug(f"output: {required_output}")
+
+        if not required_output['checks']:
+            session.logger.info('No scorecard checks found!')
+            return
+
+        overall_deps_scorecard = {
             'repo_id': repo_id,
-            'name': check['name'],
-            'scorecard_check_details': check,
-            'score': check['score'],
+            'name': 'OSSF_SCORECARD_AGGREGATE_SCORE',
+            'scorecard_check_details': required_output['repo'],
+            'score': required_output['score'],
             'tool_source': 'scorecard_model',
             'tool_version': '0.43.9',
             'data_source': 'Git',
             'data_collection_date': datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
         }
-        to_insert.append(repo_deps_scorecard)
-    
-    session.insert_data(to_insert, RepoDepsScorecard, ["repo_id","name"])
-    
-    session.logger.info(f"Done generating scorecard for repo {repo_id} from path {path}")
+        to_insert = [overall_deps_scorecard]
+   # session.insert_data(overall_deps_scorecard, RepoDepsScorecard, ["repo_id","name"])
+
+        #Store misc data from scorecard in json field. 
+        for check in required_output['checks']:
+            repo_deps_scorecard = {
+                'repo_id': repo_id,
+                'name': check['name'],
+                'scorecard_check_details': check,
+                'score': check['score'],
+                'tool_source': 'scorecard_model',
+                'tool_version': '0.43.9',
+                'data_source': 'Git',
+                'data_collection_date': datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+            }
+            to_insert.append(repo_deps_scorecard)
+
+        session.insert_data(to_insert, RepoDepsScorecard, ["repo_id","name"])
+
+        session.logger.info(f"Done generating scorecard for repo {repo_id} from path {path}")
 
 

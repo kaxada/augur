@@ -8,13 +8,11 @@ import re
 
 def get_pypi_data(name, version=None):
     """return a dictionary with pypi project data"""
-    url = "https://pypi.org/pypi/%s/json" % name
+    url = f"https://pypi.org/pypi/{name}/json"
     if version:
-        url = "https://pypi.org/pypi/%s/%s/json" % (name, version)
+        url = f"https://pypi.org/pypi/{name}/{version}/json"
     r = requests.get(url)
-    if r.status_code < 400:
-        return r.json()
-    return {}
+    return r.json() if r.status_code < 400 else {}
 
 
 def clean_version(version):
@@ -107,7 +105,7 @@ def get_libyear(current_version, current_release_date, latest_version, latest_re
 
     if not latest_version:
         return -1
-    
+
     if not latest_release_date:
         return -1
 
@@ -119,5 +117,4 @@ def get_libyear(current_version, current_release_date, latest_version, latest_re
 
     libdays = (latest_release_date - current_release_date).days
     print(libdays)
-    libyear = libdays/365
-    return libyear
+    return libdays/365

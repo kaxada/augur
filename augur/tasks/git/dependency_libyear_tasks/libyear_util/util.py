@@ -33,7 +33,7 @@ def find(name, path):
 def get_parsed_deps(path,logger):
 
     deps_file = None
-    dependency_list = list()
+    dependency_list = []
 
     for f in file_list:
         deps_file = find(f, path)
@@ -43,7 +43,7 @@ def get_parsed_deps(path,logger):
 
         if f == 'Requirement.txt':
             dependency_list = parse_requirement_txt(file_handle)
-        
+
         elif f == 'requirements.txt':
             dependency_list = parse_requirement_txt(file_handle)
 
@@ -73,14 +73,14 @@ def get_parsed_deps(path,logger):
 
         elif f == 'environment.yaml.lock':
             dependency_list = parse_conda(file_handle) 
-            
+
         elif f == 'package.json':
             try:
                 dependency_list = parse_package_json(file_handle)
             except KeyError as e:
                 logger.error(f"package.json for repo at path {path} is missing required key: {e}\n Skipping file...")
 
-        
+
         return dependency_list
 
 
@@ -88,7 +88,7 @@ def get_libyear(current_version, current_release_date, latest_version, latest_re
 
     if not latest_version:
         return -1
-    
+
     if not latest_release_date:
         return -1
 
@@ -100,16 +100,14 @@ def get_libyear(current_version, current_release_date, latest_version, latest_re
 
     libdays = (latest_release_date - current_release_date).days
     print(libdays)
-    libyear = libdays/365
-    return libyear
+    return libdays/365
 
 
 def get_deps_libyear_data(path, logger):
     current_release_date = None
     libyear = None
 
-    dependencies = get_parsed_deps(path,logger)
-    if dependencies:
+    if dependencies := get_parsed_deps(path, logger):
         for dependency in dependencies:
 
             #NOTE: Add new if for new package parser
@@ -122,11 +120,11 @@ def get_deps_libyear_data(path, logger):
                     current_version = None
                 try:
                     latest_version = get_latest_version(data)
-                    
+
                 except KeyError:
                     logger.error(f"Could not get current version of dependency for path {path}.\n  Dependency: {dependency}")
                     latest_version = None
-                
+
                 try:
                     if latest_version:
                         latest_release_date = get_release_date(data, latest_version,logger)
@@ -135,7 +133,7 @@ def get_deps_libyear_data(path, logger):
                 except KeyError:
                     logger.error(f"Could not get current date of dependency for path {path} with version {latest_version}.\n  Dependency: {dependency}")
                     latest_release_date = None
-                
+
                 if current_version:
                     current_release_date = get_release_date(data, current_version,logger)
 
@@ -164,7 +162,7 @@ def get_deps_libyear_data(path, logger):
                         logger.error(f"Could not get latest version of dependency for path {path}.\n  Dependency: {dependency}")
                         current_release_date = dateutil.parser.parse('1970-01-01 00:00:00')
 
-            
+
             libyear = get_libyear(current_version, current_release_date, latest_version, latest_release_date)
 
             if not latest_release_date:

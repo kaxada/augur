@@ -66,9 +66,6 @@ def test_languages_by_group_api_data():
     pass
 
 def test_languages_by_repo_api_data():
-    # TODO need data
-    pass
-
 # def test_license_declared_by_group_api_data():
 #     response = requests.get(f'http://localhost:{server_port}/api/unstable/repo-groups/10/license-declared')
     assert response is not None

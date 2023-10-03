@@ -52,12 +52,10 @@ def upgrade():
 
         # create user group for all the users that have repos
         user_id_query = sa.sql.text("""SELECT DISTINCT(user_id) FROM user_repos;""")
-        user_groups = session.fetchall_data_from_sql_text(user_id_query)
-        if user_groups:
-
+        if user_groups := session.fetchall_data_from_sql_text(user_id_query):
             result = []
             for group in user_groups:
-                
+
                 user_id = group["user_id"]
 
                 if user_id == CLI_USER_ID:
@@ -65,12 +63,12 @@ def upgrade():
 
                 user_group_insert = sa.sql.text(f"""INSERT INTO "augur_operations"."user_groups" ("user_id", "name") VALUES ({user_id}, 'default') RETURNING group_id, user_id;""")
                 result.append(session.fetchall_data_from_sql_text(user_group_insert)[0])
-            
+
             # cli user mapping by default
             user_group_id_mapping = {CLI_USER_ID: "1"}
             for row in result:
                 user_group_id_mapping[row["user_id"]] = row["group_id"]
-            
+
 
             user_repo_query = sa.sql.text("""SELECT * FROM user_repos;""")
             user_repo_data = session.fetchall_data_from_sql_text(user_repo_query)

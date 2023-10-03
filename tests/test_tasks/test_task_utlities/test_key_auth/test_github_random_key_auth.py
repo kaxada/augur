@@ -14,10 +14,7 @@ def github_random_key_auth():
 
     session = DatabaseSession(logger)
 
-    key_auth = GithubRandomKeyAuth(session)
-
-    yield key_auth
-
+    yield GithubRandomKeyAuth(session)
     session.close()
 
 

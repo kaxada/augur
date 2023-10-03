@@ -142,7 +142,7 @@ def insight_model(repo_git: str,logger,engine,session) -> None:
     table_values_sql = s.sql.text("""SELECT * FROM repo_insights_records WHERE repo_id={}""".format(repo_id))
     insight_table_values = pd.read_sql(table_values_sql, engine, params={})
 
-    to_model_columns = df.columns[0:len(metrics) + 1]
+    to_model_columns = df.columns[:len(metrics) + 1]
 
     model = IsolationForest(n_estimators=100, max_samples='auto', contamination=float(contamination), \
                             max_features=1.0, bootstrap=False, n_jobs=-1, random_state=32, verbose=0)
@@ -322,14 +322,6 @@ def confidence_interval_insights(logger, engine):
 
     """ For when we want all endpoints """
 
-    # """ Query all endpoints """
-    # endpointSQL = s.sql.text("""
-    #     SELECT * FROM chaoss_metric_status WHERE cm_source = 'augur_db'
-    #     """)
-    #with DatabaseEngine(connection_pool_size=1) as engine:
-        # for endpoint in pd.read_sql(endpointSQL,engine, params={}).to_records():
-        #     endpoints.append(endpoint)
-
     """"""
 
     # If we are discovering insights for a group vs repo, the base url will change
@@ -418,7 +410,7 @@ def confidence_interval_insights(logger, engine):
                     except:
                         logger.info("Key: {} is non-numerical, moving to next key.".format(key))
 
-        for key in raw_values.keys():
+        for key in raw_values:
             if len(raw_values[key]) > 0:
                 mean, lower, upper = confidence_interval(raw_values[key], logger, confidence=confidence)
                 logger.info("Upper: {}, middle: {}, lower: {}".format(upper, mean, lower))
@@ -504,8 +496,9 @@ def confidence_interval_insights(logger, engine):
                                 session.add(repo_insight_obj)
                                 session.commit()
 
-                                logger.info("Primary key inserted into the repo_insights table: " + str(
-                                    repo_insight_obj.ri_id))
+                                logger.info(
+                                    f"Primary key inserted into the repo_insights table: {str(repo_insight_obj.ri_id)}"
+                                )
 
                                 logger.info("Inserted data point for endpoint: {}\n".format(endpoint['cm_info']))
                                 j += 1
@@ -533,8 +526,8 @@ def send_insight(insight, units_from_mean, logger, engine):
         dict_date = insight['ri_date'].strftime("%Y-%m-%d %H:%M:%S")
         if insight['ri_date'] > begin_date and send_insights:
             logger.info(
-                "Insight less than {} days ago date found: {}\n\nSending to Jonah...".format(anomaly_days,
-                                                                                             insight))
+                f"Insight less than {anomaly_days} days ago date found: {insight}\n\nSending to Jonah..."
+            )
             to_send = {
                 'insight': True,
                 # 'rg_name': repo['rg_name'],
@@ -549,12 +542,13 @@ def send_insight(insight, units_from_mean, logger, engine):
             }
             requests.post('https://ejmoq97307.execute-api.us-east-1.amazonaws.com/dev/insight-event', json=to_send)
     except Exception as e:
-        logger.info("sending insight to jonah failed: {}".format(e))
+        logger.info(f"sending insight to jonah failed: {e}")
 
 def clear_insights(repo_id, new_endpoint, new_field, logger):
 
-    logger.info("Deleting all tuples in repo_insights_records table with info: "
-                 "repo {} endpoint {} field {}".format(repo_id, new_endpoint, new_field))
+    logger.info(
+        f"Deleting all tuples in repo_insights_records table with info: repo {repo_id} endpoint {new_endpoint} field {new_field}"
+    )
     deleteSQL = """
         DELETE 
             FROM
@@ -567,11 +561,12 @@ def clear_insights(repo_id, new_endpoint, new_field, logger):
     try:
         result = engine.execute(deleteSQL)
     except Exception as e:
-        logger.info("Error occured deleting insight slot: {}".format(e))
+        logger.info(f"Error occured deleting insight slot: {e}")
 
     # Delete all insights
-    logger.info("Deleting all tuples in repo_insights table with info: "
-                 "repo {} endpoint {} field {}".format(repo_id, new_endpoint, new_field))
+    logger.info(
+        f"Deleting all tuples in repo_insights table with info: repo {repo_id} endpoint {new_endpoint} field {new_field}"
+    )
     deleteSQL = """
         DELETE 
             FROM
@@ -584,7 +579,7 @@ def clear_insights(repo_id, new_endpoint, new_field, logger):
     try:
         result = engine.execute(deleteSQL)
     except Exception as e:
-        logger.info("Error occured deleting insight slot: {}".format(e))
+        logger.info(f"Error occured deleting insight slot: {e}")
 
 def clear_insight(repo_id, new_score, new_metric, new_field, logger):
     logger.info("Checking if insight slots filled...")
@@ -603,16 +598,15 @@ def clear_insight(repo_id, new_score, new_metric, new_field, logger):
         ORDER BY ri_score DESC
     """.format(repo_id, new_metric, new_field))
     rec = json.loads(pd.read_sql(recordSQL, engine, params={}).to_json(orient='records'))
-    logger.info("recordsql: {}, \n{}".format(recordSQL, rec))
+    logger.info(f"recordsql: {recordSQL}, \n{rec}")
     # If new score is higher, continue with deletion
     if len(rec) > 0:
         if new_score > rec[0]['ri_score'] or refresh:
             insertion_directions['record'] = True
             for record in rec:
                 logger.info(
-                    "Refresh is on or Insight record found with a greater score than current slot filled for "
-                    "repo {} metric {} new score {}, old score {}".format(repo_id, record['ri_metric'], new_score,
-                                                                          record['ri_score']))
+                    f"Refresh is on or Insight record found with a greater score than current slot filled for repo {repo_id} metric {record['ri_metric']} new score {new_score}, old score {record['ri_score']}"
+                )
                 deleteSQL = """
                     DELETE 
                         FROM
@@ -625,7 +619,7 @@ def clear_insight(repo_id, new_score, new_metric, new_field, logger):
                 try:
                     result = engine.execute(deleteSQL)
                 except Exception as e:
-                    logger.info("Error occured deleting insight slot: {}".format(e))
+                    logger.info(f"Error occured deleting insight slot: {e}")
     else:
         insertion_directions['record'] = True
 
@@ -638,7 +632,7 @@ def clear_insight(repo_id, new_score, new_metric, new_field, logger):
         ORDER BY ri_score ASC
     """.format(repo_id))
     ins = json.loads(pd.read_sql(insightSQL, engine, params={}).to_json(orient='records'))
-    logger.info("This repos insights: {}".format(ins))
+    logger.info(f"This repos insights: {ins}")
 
     # Determine if inisghts need to be deleted based on if there are more insights than we want stored,
     #   or if the current insights have a lower score
@@ -647,15 +641,16 @@ def clear_insight(repo_id, new_score, new_metric, new_field, logger):
     for insight in ins:
         insight['ri_score'] = insight['ri_score'] if insight['ri_score'] else 0.0
         logger.info(
-            "{}, {}, {}, {}".format(insight['ri_metric'], new_metric, insight['ri_score'], num_insights_per_repo))
+            f"{insight['ri_metric']}, {new_metric}, {insight['ri_score']}, {num_insights_per_repo}"
+        )
         if (insight[
                 'ri_score'] < new_score and num_insights >= num_insights_per_repo) or num_insights > num_insights_per_repo or (
                 insight['ri_metric'] == new_metric and refresh):
             num_insights -= 1
             to_delete.append(insight)
-            logger.info("condition met, new len: {}, insight score: {}, new_score: {}".format(num_insights,
-                                                                                               insight['ri_score'],
-                                                                                               new_score))
+            logger.info(
+                f"condition met, new len: {num_insights}, insight score: {insight['ri_score']}, new_score: {new_score}"
+            )
 
     # After psuedo-deletion, determine if insertion of the new insight is needed
     if num_insights < num_insights_per_repo:
@@ -664,8 +659,8 @@ def clear_insight(repo_id, new_score, new_metric, new_field, logger):
     # Delete all insights marked for deletion
     for insight in to_delete:
         logger.info(
-            "insight found with a greater score than current slots filled for repo {} new score {}, old score {}".format(
-                repo_id, new_score, insight['ri_score']))
+            f"insight found with a greater score than current slots filled for repo {repo_id} new score {new_score}, old score {insight['ri_score']}"
+        )
         deleteSQL = """
             DELETE 
                 FROM
@@ -677,28 +672,32 @@ def clear_insight(repo_id, new_score, new_metric, new_field, logger):
         try:
             result = engine.execute(deleteSQL)
         except Exception as e:
-            logger.info("Error occured deleting insight slot: {}".format(e))
+            logger.info(f"Error occured deleting insight slot: {e}")
 
     return insertion_directions
 
 def confidence_interval(data, logger, timeperiod='week', confidence=.95, ):
     """ Method to find high activity issues in the past specified timeperiod """
     a = 1.0 * np.array(data)
-    logger.info("np array: {}".format(a))
+    logger.info(f"np array: {a}")
     n = len(a)
     m, se = np.mean(a), scipy.stats.sem(a)
-    logger.info("Mean: {}, standard error: {}".format(m, se))
+    logger.info(f"Mean: {m}, standard error: {se}")
     h = se * scipy.stats.t.ppf((1 + confidence) / 2., n - 1)
-    logger.info("H: {}".format(h))
+    logger.info(f"H: {h}")
     return m, m - h, m + h
 
 def update_metrics(api_host, api_port, tool_source, tool_version, logger, session, engine):
 
-    logger.info("Preparing to update metrics ...\n\n" +
-                 "Hitting endpoint: http://{}:{}/api/unstable/metrics/status ...\n".format(
-                     api_host, api_port))
-    r = requests.get(url='http://{}:{}/api/unstable/metrics/status'.format(
-                    api_host, api_port))
+    logger.info(
+        (
+            "Preparing to update metrics ...\n\n"
+            + f"Hitting endpoint: http://{api_host}:{api_port}/api/unstable/metrics/status ...\n"
+        )
+    )
+    r = requests.get(
+        url=f'http://{api_host}:{api_port}/api/unstable/metrics/status'
+    )
     data = r.json()
 
     active_metrics = [metric for metric in data if metric['backend_status'] == 'implemented']
@@ -706,7 +705,10 @@ def update_metrics(api_host, api_port, tool_source, tool_version, logger, sessio
     # Duplicate checking ...
     need_insertion = filter_duplicates({'cm_api_endpoint_repo': "endpoint"}, ['chaoss_metric_status'],
                                             active_metrics, logger, engine)
-    logger.info("Count of contributors needing insertion: " + str(len(need_insertion)) + "\n")
+    logger.info(
+        f"Count of contributors needing insertion: {len(need_insertion)}"
+        + "\n"
+    )
 
     for metric in need_insertion:
         cms_tuple = {
@@ -715,7 +717,7 @@ def update_metrics(api_host, api_port, tool_source, tool_version, logger, sessio
             "cm_type": metric['metric_type'],
             "cm_backend_status": metric['backend_status'],
             "cm_frontend_status": metric['frontend_status'],
-            "cm_defined": True if metric['is_defined'] == 'true' else False,
+            "cm_defined": metric['is_defined'] == 'true',
             "cm_api_endpoint_repo": metric['endpoint'],
             "cm_api_endpoint_rg": None,
             "cm_info": metric['display_name'],
@@ -723,13 +725,15 @@ def update_metrics(api_host, api_port, tool_source, tool_version, logger, sessio
             "cm_info": metric['tag'],
             "tool_source": tool_source,
             "tool_version": tool_version,
-            "data_source": metric['data_source']
+            "data_source": metric['data_source'],
         }
         cms_tuple = ChaossMetricStatus(**cms_tuple)
         session.add(cms_tuple)
         session.commit()
 
-        logger.info("Primary key inserted into the metrics table: {}\n".format(cms_tuple.cms_id))
+        logger.info(
+            f"Primary key inserted into the metrics table: {cms_tuple.cms_id}\n"
+        )
 
         logger.info("Inserted metric: " + metric['display_name'] + "\n")
 
@@ -748,11 +752,15 @@ def filter_duplicates(cols, tables, og_data, logger, engine):
 
         for obj in og_data:
             if values.isin([obj[cols[col]]]).any().any():
-                logger.info("value of tuple exists: " + str(obj[cols[col]]) + "\n")
+                logger.info(f"value of tuple exists: {str(obj[cols[col]])}" + "\n")
             elif obj not in need_insertion:
                 need_insertion.append(obj)
-    logger.info("While filtering duplicates, we reduced the data size from " + str(len(og_data)) +
-                 " to " + str(len(need_insertion)) + "\n")
+    logger.info(
+        (
+            f"While filtering duplicates, we reduced the data size from {len(og_data)} to {len(need_insertion)}"
+            + "\n"
+        )
+    )
     return need_insertion
 
 

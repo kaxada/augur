@@ -12,7 +12,9 @@ from augur.application.db.session import DatabaseSession
 def cache(file=None):
     if file is None:
         return redirect(url_for('static', filename="cache"))
-    return redirect(url_for('static', filename="cache/" + toCacheFilename(file, False)))
+    return redirect(
+        url_for('static', filename=f"cache/{toCacheFilename(file, False)}")
+    )
 
 
 def add_existing_repo_to_group(session, user_id, group_name, repo_id):
@@ -34,9 +36,9 @@ def add_existing_org_to_group(session, user_id, group_name, rg_id):
     group_id = UserGroup.convert_group_name_to_id(session, user_id, group_name)
     if group_id is None:
         return False
-    
+
     repos = session.query(Repo).filter(Repo.repo_group_id == rg_id).all()
-    logger.info("Length of repos in org: " + str(len(repos)))
+    logger.info(f"Length of repos in org: {len(repos)}")
     for repo in repos:
         result = UserRepo.insert(session, repo.repo_id, group_id)
         if not result:
@@ -54,7 +56,7 @@ def av_add_user_repo():
     if not urls:
         flash("No URLs provided")
         return redirect(url_for("user_settings") + "?section=tracker")
-    
+
     # split on commas, carriage returns, and whitespace
     urls = re.split(r'[,\r\s]+', urls)
 
@@ -64,7 +66,7 @@ def av_add_user_repo():
     urls = list(filter(None, set(urls)))
 
     if group == "None":
-        group = current_user.login_name + "_default"
+        group = f"{current_user.login_name}_default"
 
     invalid_urls = []
 
@@ -73,28 +75,22 @@ def av_add_user_repo():
 
             # matches https://github.com/{org}/ or htts://github.com/{org}
             if (org_name := Repo.parse_github_org_url(url)):
-                rg_obj = RepoGroup.get_by_name(session, org_name)
-                if rg_obj:
+                if rg_obj := RepoGroup.get_by_name(session, org_name):
                     # add the orgs repos to the group
                     add_existing_org_to_group(session, current_user.user_id, group, rg_obj.repo_group_id)
 
-            # matches https://github.com/{org}/{repo}/ or htts://github.com/{org}/{repo}
             elif Repo.parse_github_repo_url(url)[0]:
                 org_name, repo_name = Repo.parse_github_repo_url(url)
                 repo_git = f"https://github.com/{org_name}/{repo_name}"
-                repo_obj = Repo.get_by_repo_git(session, repo_git)
-                if repo_obj:
+                if repo_obj := Repo.get_by_repo_git(session, repo_git):
                     add_existing_repo_to_group(session, current_user.user_id, group, repo_obj.repo_id)
 
-            # matches /{org}/{repo}/ or /{org}/{repo} or {org}/{repo}/ or {org}/{repo}
             elif (match := parse_org_and_repo_name(url)):
                 org, repo = match.groups()
                 repo_git = f"https://github.com/{org}/{repo}"
-                repo_obj = Repo.get_by_repo_git(session, repo_git)
-                if repo_obj:
+                if repo_obj := Repo.get_by_repo_git(session, repo_git):
                     add_existing_repo_to_group(session, current_user.user_id, group, repo_obj.repo_id)
-            
-            # matches /{org}/ or /{org} or {org}/ or {org}
+
             elif (match := parse_org_name(url)):
                 org_name = match.group(1)
                 rg_obj = RepoGroup.get_by_name(session, org_name)
@@ -102,7 +98,7 @@ def av_add_user_repo():
                 if rg_obj:
                     # add the orgs repos to the group
                     add_existing_org_to_group(session, current_user.user_id, group, rg_obj.repo_group_id)
-            
+
             else:
                 invalid_urls.append(url)
 
@@ -111,7 +107,7 @@ def av_add_user_repo():
         add_org_repo_list.si(current_user.user_id, group, urls).apply_async()
 
     flash("Adding repos and orgs in the background")
-            
+
     return redirect(url_for("user_settings") + "?section=tracker")
 
 @app.route('/account/update', methods = ['POST'])
@@ -168,13 +164,11 @@ def user_remove_repo():
 
     repo = int(repo)
 
-    result = current_user.remove_repo(group, repo)[0]
-
-    if result:
+    if result := current_user.remove_repo(group, repo)[0]:
         flash(f"Successfully removed repo {repo} from group {group}")
     else:
         flash("An error occurred removing repo from group")
-    
+
     return redirect(url_for("user_group_view") + f"?group={group}")
 
 @app.route('/account/application/deauthorize')

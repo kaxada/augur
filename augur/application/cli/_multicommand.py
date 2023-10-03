@@ -16,16 +16,17 @@ class AugurMultiCommand(click.MultiCommand):
         return os.path.abspath(os.path.dirname(__file__))
 
     def list_commands(self, ctx):
-        rv = []
-        for filename in os.listdir(self.__commands_folder()):
-            if not filename.startswith('_') and filename.endswith('.py'):
-                rv.append(filename[:-3])
+        rv = [
+            filename[:-3]
+            for filename in os.listdir(self.__commands_folder())
+            if not filename.startswith('_') and filename.endswith('.py')
+        ]
         rv.sort()
         return rv
 
     def get_command(self, ctx, name):
         try:
-            module = importlib.import_module('.' + name, 'augur.application.cli')
+            module = importlib.import_module(f'.{name}', 'augur.application.cli')
             return module.cli
         except ModuleNotFoundError:
             pass

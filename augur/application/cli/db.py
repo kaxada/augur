@@ -56,14 +56,13 @@ def add_repos(filename):
             data = csv.reader(upload_repos_file, delimiter=",")
             for row in data:
                 
-                repo_data = {}
-                repo_data["url"] = row[0]
+                repo_data = {"url": row[0]}
                 try:
                     repo_data["repo_group_id"] = int(row[1])
                 except ValueError:
                     print(f"Invalid repo group_id: {row[1]} for Git url: `{repo_data['url']}`")
                     continue
-                
+
                 print(
                     f"Inserting repo with Git URL `{repo_data['url']}` into repo group {repo_data['repo_group_id']}")
                 controller.add_cli_repo(repo_data)
@@ -280,16 +279,11 @@ def get_api_key():
     short_help="Check the ~/.pgpass file for Augur's database credentials",
 )
 def check_pgpass():
-    augur_db_env_var = os.getenv("AUGUR_DB")
-    if augur_db_env_var:
-
-        # gets the user, passowrd, host, port, and database_name out of environment variable
-        # assumes database string of structure <beginning_of_db_string>//<user>:<password>@<host>:<port>/<database_name>
-        # it returns a tuple like (<user>, <password>, <host>, <port>, <database_name)
-        db_string_parsed = re.search(r"^.+:\/\/([a-zA-Z0-9_]+):(.+)@([a-zA-Z0-9-_~\.]+):(\d{1,5})\/([a-zA-Z0-9_-]+)", augur_db_env_var).groups()
-
-        if db_string_parsed:
-
+    if augur_db_env_var := os.getenv("AUGUR_DB"):
+        if db_string_parsed := re.search(
+            r"^.+:\/\/([a-zA-Z0-9_]+):(.+)@([a-zA-Z0-9-_~\.]+):(\d{1,5})\/([a-zA-Z0-9_-]+)",
+            augur_db_env_var,
+        ).groups():
             db_config = {
                 "user": db_string_parsed[0],
                 "password": db_string_parsed[1],
@@ -305,10 +299,10 @@ def check_pgpass():
 
 
     else:
-         with open("db.config.json", "r") as f:
-            config = json.load(f)
-            print(f"Config: {config}")
-            check_pgpass_credentials(config)
+        with open("db.config.json", "r") as f:
+           config = json.load(f)
+           print(f"Config: {config}")
+           check_pgpass_credentials(config)
 
 
 
@@ -387,10 +381,7 @@ def run_psql_command_in_database(target_type, target):
     # db_json_file_location = os.getcwd() + "/db.config.json"
     # db_json_exists = os.path.exists(db_json_file_location)
 
-    if augur_db_environment_var:
-        pass
-        #TODO: Add functionality for environment variable
-    else:
+    if not augur_db_environment_var:
         with open("db.config.json", 'r') as f:
             db_config = json.load(f)
 

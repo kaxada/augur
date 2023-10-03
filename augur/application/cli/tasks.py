@@ -79,14 +79,14 @@ def clear():
         if not user_input:
             logger.info("Exiting")
             return
-        
-        if user_input in ("y", "Y", "Yes", "yes"):
+
+        if user_input in {"y", "Y", "Yes", "yes"}:
             logger.info("Removing all tasks")
             celery_purge_command = "celery -A augur.tasks.init.celery_app.celery_app purge -f"
             subprocess.call(celery_purge_command.split(" "))
             return
 
-        elif user_input in ("n", "N", "no", "NO"):
+        elif user_input in {"n", "N", "no", "NO"}:
             logger.info("Exiting")
             return
         else:

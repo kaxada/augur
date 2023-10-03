@@ -9,8 +9,7 @@ def get_files(path):
     # copied from example on https://docs.python.org/3/library/pathlib.html
     dir = path
     p = Path(dir)
-    files = list(p.glob("**/*.py"))
-    return files
+    return list(p.glob("**/*.py"))
 
 
 def get_deps_for_file(path):
@@ -20,10 +19,8 @@ def get_deps_for_file(path):
         return get_deps_for_file_simple_regex(path)
 
 def get_deps_for_file_simple_regex(path):
-    f = open(path, 'r',encoding="utf-8")
-
-    matches = re.findall("import\s*(\w*)", f.read())
-    f.close()
+    with open(path, 'r',encoding="utf-8") as f:
+        matches = re.findall("import\s*(\w*)", f.read())
     return matches
 
 
@@ -40,7 +37,6 @@ def get_deps_for_file_ast(path):
                 for name in node.names:
                     imports.add(name.name)
             elif isinstance(node, ast.ImportFrom):
-                module_name = node.module
-                if module_name:
+                if module_name := node.module:
                     imports.add(module_name)
     return imports

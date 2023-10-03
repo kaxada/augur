@@ -49,7 +49,7 @@ def upgrade():
         except:
             # database has never been created
             augur_version = 79
-            logger.info(f"New database, will run all legacy migrations")
+            logger.info("New database, will run all legacy migrations")
     legacy_folder = Path(__file__).parent / "legacy"
     relevant_legacy_migrations = filter(
         lambda file_name: is_newer_than_current_version(file_name, augur_version),
@@ -68,7 +68,7 @@ def upgrade():
             op.execute(legacy_migration_file.read())
 
     # execute the commit.sql file at then end of all the sql files to COMMIT everything in the first revision
-    commit_file_path = str(legacy_folder) + "/commit.sql"
+    commit_file_path = f"{str(legacy_folder)}/commit.sql"
     with open(commit_file_path, "r") as commit_file:
         op.execute(commit_file.read())
 

@@ -24,9 +24,10 @@ def test_get_user(test_db_engine):
             user_id = 1
             email = f"{username}@gmail.com"
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_user_insert_statement(user_id, username, email))
+            query_statements = [
+                clear_tables_statement,
+                get_user_insert_statement(user_id, username, email),
+            ]
             query = s.text("".join(query_statements))
 
             connection.execute(query)
@@ -44,7 +45,7 @@ def test_get_user(test_db_engine):
             assert user.user_id == user_id
             assert user.login_name == username
             assert user.email == email
-  
+
     finally:
         with test_db_engine.connect() as connection:
             connection.execute(clear_tables_statement)
@@ -82,13 +83,13 @@ def test_delete_user(test_db_engine):
                     }
                 }
             }
-            
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-             
-            # create bare user
-            query_statements.append(get_user_insert_statement(user1["user_id"], user1["user_name"], user1["email"]))
 
+            query_statements = [
+                clear_tables_statement,
+                get_user_insert_statement(
+                    user1["user_id"], user1["user_name"], user1["email"]
+                ),
+            ]
             # # create user with groups
             query_statements.append(get_user_insert_statement(user2["user_id"], user2["user_name"], user2["email"]))
             query_statements.append(get_user_group_insert_statement(user2["user_id"], user2["group"]["group_name"]))
@@ -105,7 +106,7 @@ def test_delete_user(test_db_engine):
             connection.execute(query)
 
         with DatabaseSession(logger, test_db_engine) as session:
-            
+
             # delete user with no groups or repos
             user1_obj = session.query(User).filter(User.user_id == user1["user_id"]).first()
             assert user1_obj.delete(session)[0] is True
@@ -113,12 +114,12 @@ def test_delete_user(test_db_engine):
             # # delete user with groups, but no repos
             user2_obj = session.query(User).filter(User.user_id == user2["user_id"]).first()
             assert user2_obj.delete(session)[0] is True
-            
+
             # # delete user with groups and repos
             user3_obj = session.query(User).filter(User.user_id == user3["user_id"]).first()
             assert user3_obj.delete(session)[0] is True
 
-            
+
     finally:
         with test_db_engine.connect() as connection:
             connection.execute(clear_tables_statement)
@@ -139,9 +140,10 @@ def test_update_user_password(test_db_engine):
             password = "pass"
             new_password = "be++erp@ssw0rd"
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_user_insert_statement(user_id, username, email, password))
+            query_statements = [
+                clear_tables_statement,
+                get_user_insert_statement(user_id, username, email, password),
+            ]
             query = s.text("".join(query_statements))
 
             connection.execute(query)
@@ -165,7 +167,7 @@ def test_update_user_password(test_db_engine):
             user = session.query(User).filter(User.user_id == 1).first()
             assert check_password_hash(user.login_hashword, new_password)
 
-  
+
     finally:
         with test_db_engine.connect() as connection:
             connection.execute(clear_tables_statement)

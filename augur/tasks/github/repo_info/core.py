@@ -32,11 +32,11 @@ def get_repo_data(logger, url, response):
         data = json.loads(json.dumps(response.text))
 
     if 'errors' in data:
-        logger.info("Error!: {}".format(data['errors']))
+        logger.info(f"Error!: {data['errors']}")
         raise Exception(f"Github returned error response! {data['errors']}")
 
     if 'id' not in data:
-        logger.info("Request returned a non-data dict: {}\n".format(data))
+        logger.info(f"Request returned a non-data dict: {data}\n")
         if data['message'] == 'Not Found':
             raise Exception(f"Github repo was not found or does not exist for endpoint: {url}\n")
 
@@ -69,9 +69,7 @@ def is_archived(key_auth, logger, owner, repo):
 
     if 'archived' in data:
         if data['archived']:
-            if 'updated_at' in data:
-                return data['updated_at']
-            return 'Date not available'
+            return data['updated_at'] if 'updated_at' in data else 'Date not available'
         return False
 
     return False
@@ -79,21 +77,21 @@ def is_archived(key_auth, logger, owner, repo):
 def grab_repo_info_from_graphql_endpoint(key_auth, logger, query):
     url = 'https://api.github.com/graphql'
     # Hit the graphql endpoint and retry 3 times in case of failure
-    logger.info("Hitting endpoint: {} ...\n".format(url))
+    logger.info(f"Hitting endpoint: {url} ...\n")
     data = request_graphql_dict(key_auth, logger, url, query)
 
     if not data:
-        raise Exception(f"Could not get data from endpoint!")
+        raise Exception("Could not get data from endpoint!")
     if 'errors' in data:
         raise Exception(f"Error!: {data['errors']}")
-    
+
     if 'data' in data:
         data = data['data']['repository']
     else:
-        logger.info("Request returned a non-data dict: {}\n".format(data))
+        logger.info(f"Request returned a non-data dict: {data}\n")
         if data['message'] == 'Not Found':
             raise Exception(f"Github repo was not found or does not exist for endpoint: {url}\n")
-    
+
     return data
     
 
@@ -302,10 +300,10 @@ def badges_model(logger,repo_git,repo_id,db):
     """
     cii_endpoint = "https://bestpractices.coreinfrastructure.org/projects.json?pq="
 
-    
+
     #https://github.com/chaoss/grimoirelab-hatstall
     logger.info(f"Collecting badge data for {repo_git}")
-    git_url_extension = quote(repo_git[0:-4])
+    git_url_extension = quote(repo_git[:-4])
 
     url = cii_endpoint + git_url_extension
     logger.debug(f"Hitting CII endpoint: {url}")

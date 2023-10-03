@@ -22,7 +22,7 @@ def add_org_repo_list(user_id, group_name, urls):
     logger = logging.getLogger(add_org_repo_list.__name__)
 
     with GithubTaskSession(logger) as session:
-     
+
         user = User.get_by_id(session, user_id)
 
     invalid_urls = []
@@ -36,26 +36,21 @@ def add_org_repo_list(user_id, group_name, urls):
             if added:
                 valid_orgs.append(url)
 
-        # matches https://github.com/{org}/{repo}/ or htts://github.com/{org}/{repo}
         elif Repo.parse_github_repo_url(url)[0]:
             added = user.add_repo(group_name, url)[0]
             if added:
                 valid_repos.append(url)
 
-        # matches /{org}/{repo}/ or /{org}/{repo} or {org}/{repo}/ or {org}/{repo}
         elif (match := parse_org_and_repo_name(url)):
             org, repo = match.groups()
             repo_url = f"https://github.com/{org}/{repo}/"
-            added = user.add_repo(group_name, repo_url)[0]
-            if added:
+            if added := user.add_repo(group_name, repo_url)[0]:
                 valid_repos.append(url)
 
-        # matches /{org}/ or /{org} or {org}/ or {org}
         elif (match := parse_org_name(url)):
             org = match.group(1)
             org_url = f"https://github.com/{org}/"
-            added = user.add_org(group_name, org_url)[0]
-            if added:
+            if added := user.add_org(group_name, org_url)[0]:
                 valid_orgs.append(url)
         else:
             invalid_urls.append(url)

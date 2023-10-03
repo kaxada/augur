@@ -6,13 +6,11 @@ def get_files(path):
 	#copied from example on https://docs.python.org/3/library/pathlib.html
 	dir = path
 	p = Path(dir)
-	files = list(p.glob('**/*.cpp'))
-	return files
+	return list(p.glob('**/*.cpp'))
 	
 def get_deps_for_file(path):
-	f = open(path, 'r')
-	matches = re.findall("#include\s*<(\w*)>", f.read())
-	f.seek(0)
-	matches.extend(re.findall('#include\s*"(\w*)"', f.read()))
-	f.close()
+	with open(path, 'r') as f:
+		matches = re.findall("#include\s*<(\w*)>", f.read())
+		f.seek(0)
+		matches.extend(re.findall('#include\s*"(\w*)"', f.read()))
 	return matches

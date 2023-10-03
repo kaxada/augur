@@ -3,11 +3,7 @@
 import os
 import glob
 
-files = glob.glob('%s/generate*.py' % os.path.dirname(__file__))
+files = glob.glob(f'{os.path.dirname(__file__)}/generate*.py')
 
-__all__ = list()
-
-for f in files:
-	if os.path.isfile(f):
-		__all__.append(os.path.basename(f)[:-3])
+__all__ = [os.path.basename(f)[:-3] for f in files if os.path.isfile(f)]
 

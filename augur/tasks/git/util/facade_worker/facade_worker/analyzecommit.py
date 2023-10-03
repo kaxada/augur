@@ -177,12 +177,12 @@ def analyze_commit(session, repo_id, repo_loc, commit):
 					:committer_name,:committer_email_raw,:committer_email,:committer_date,:committer_timestamp,
 					:added,:removed,:whitespace,:committer_date,:tool_source,:tool_version,:data_source)
 					""").bindparams(**commit_record)
-				
+
 				session.execute_sql(store)
 			else:
 				raise e
 		except Exception as e:
-		
+
 			session.logger.error(f"Ran into issue when trying to insert commit with values: \n {commit_record} \n Error: {e}")
 			raise e
 
@@ -273,7 +273,7 @@ def analyze_commit(session, repo_id, repo_loc, commit):
 				continue
 
 			if line.find('+++ b/') == 0:
-				if not filename.find('(Deleted) ') == 0:
+				if filename.find('(Deleted) ') != 0:
 					filename = line[6:]
 				continue
 

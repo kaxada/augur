@@ -25,7 +25,7 @@ def create_full_routes(routes):
     for route in routes:
         route = re.sub("<default_repo_id>", default_repo_id, route)
         route = re.sub("<default_repo_group_id>", default_repo_group_id, route)
-        route = "http://localhost:5000/api/unstable/" + route
+        route = f"http://localhost:5000/api/unstable/{route}"
         full_routes.append(route)
     return full_routes
 
@@ -67,7 +67,11 @@ def drop_database(cursor, db_name):
     """
 
     # ensure connections are removed
-    cursor.execute(sql.SQL("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='{}';".format(db_name)))
+    cursor.execute(
+        sql.SQL(
+            f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='{db_name}';"
+        )
+    )
     # drop temporary database
     cursor.execute(sql.SQL("DROP DATABASE {};").format(sql.Identifier(db_name)))
 
@@ -96,11 +100,11 @@ def generate_db_from_template(template_name):
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     cursor = conn.cursor()
 
-    test_db_name = "test_db_" + uuid.uuid4().hex
+    test_db_name = f"test_db_{uuid.uuid4().hex}"
 
     # remove database_name and add test_db_name
     test_db_string = db_string[:db_string.rfind("/")+1] + test_db_name
-    
+
     create_database(conn, cursor, test_db_name, template_name)
 
     # create engine to connect to db
@@ -143,7 +147,7 @@ def generate_template_db(sql_file_path):
     cursor = conn.cursor()
 
 
-    test_db_name = "test_db_template_" + uuid.uuid4().hex
+    test_db_name = f"test_db_template_{uuid.uuid4().hex}"
     create_database(conn, cursor, test_db_name)
 
     # Install schema
@@ -151,7 +155,11 @@ def generate_template_db(sql_file_path):
 
 
     # ensure connections are removed
-    cursor.execute(sql.SQL("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='{}';".format(test_db_name)))
+    cursor.execute(
+        sql.SQL(
+            f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='{test_db_name}';"
+        )
+    )
 
     # drop temporary database
 
@@ -229,7 +237,7 @@ def test_db_engine():
 
     db_string_without_db_name = re.search(r"(.+:\/\/.+\/).+", db_string).groups()[0]
 
-    testing_db_string = db_string_without_db_name + "augur-test"
+    testing_db_string = f"{db_string_without_db_name}augur-test"
 
     yield s.create_engine(testing_db_string)
 

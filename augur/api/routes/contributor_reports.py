@@ -34,9 +34,7 @@ def quarters(month, year):
 
 def new_contributor_data_collection(repo_id, required_contributions):
 
-    rank_list = []
-    for num in range(1, required_contributions + 1):
-        rank_list.append(num)
+    rank_list = list(range(1, required_contributions + 1))
     rank_tuple = tuple(rank_list)
 
     contributor_query = salc.sql.text(f"""        
@@ -357,21 +355,21 @@ def get_repo_id_start_date_and_end_date():
     now = datetime.datetime.now()
 
     repo_id = request.args.get('repo_id')
-    start_date = str(request.args.get('start_date', "{}-01-01".format(now.year - 1)))
-    end_date = str(request.args.get('end_date', "{}-{}-{}".format(now.year, now.month, now.day)))
+    start_date = str(request.args.get('start_date', f"{now.year - 1}-01-01"))
+    end_date = str(
+        request.args.get('end_date', f"{now.year}-{now.month}-{now.day}")
+    )
 
     if repo_id:
 
         if start_date < end_date:
             return int(repo_id), start_date, end_date, None
-        else:
+        error = {
+            "message": "Invalid end_date. end_date is before the start_date",
+            "status_code": 400
+        }
 
-            error = {
-                "message": "Invalid end_date. end_date is before the start_date",
-                "status_code": 400
-            }
-
-            return int(repo_id), None, None, error
+        return int(repo_id), None, None, error
 
     else:
         error = {
@@ -437,16 +435,18 @@ def add_caption_to_visualizations(caption, required_contributions, required_time
 
     caption_plot = figure(width=plot_width, height=200, margin=(0, 0, 0, 0))
 
-    caption_plot.add_layout(Label(
-        x=0,
-        y=160,
-        x_units='screen',
-        y_units='screen',
-        text='{}'.format(caption.format(required_contributions, required_time)),
-        text_font='times',
-        text_font_size='15pt',
-        render_mode='css'
-    ))
+    caption_plot.add_layout(
+        Label(
+            x=0,
+            y=160,
+            x_units='screen',
+            y_units='screen',
+            text=f'{caption.format(required_contributions, required_time)}',
+            text_font='times',
+            text_font_size='15pt',
+            render_mode='css',
+        )
+    )
     caption_plot.outline_line_color = None
 
     return caption_plot
@@ -477,7 +477,7 @@ def format_new_cntrb_bar_charts(plot, rank, group_by_format_string):
 def add_charts_and_captions_to_correct_positions(chart_plot, caption_plot, rank, contributor_type,
                                                     row_1, row_2, row_3, row_4):
 
-    if rank == 1 and (contributor_type == 'All' or contributor_type == 'repeat'):
+    if rank == 1 and contributor_type in ['All', 'repeat']:
         row_1.append(chart_plot)
         row_2.append(caption_plot)
     elif rank == 2 or contributor_type == 'drive_by':
@@ -495,9 +495,7 @@ def get_new_cntrb_bar_chart_query_params():
 def remove_rows_before_start_date(df, start_date):
 
     mask = (df['yearmonth'] < start_date)
-    result_df = df[~df['cntrb_id'].isin(df.loc[mask]['cntrb_id'])]
-
-    return result_df
+    return df[~df['cntrb_id'].isin(df.loc[mask]['cntrb_id'])]
 
 def remove_rows_with_null_values(df, not_null_columns=[]):
     """Remove null data from pandas df
@@ -582,12 +580,12 @@ def filter_data(df, needed_columns, not_null_columns=[]):
         #IM - 9/23/22
         df = df.dropna(subset=not_null_columns)#remove_rows_with_null_values(df, not_null_columns)
 
-        return df
     else:
         print("Developer error, not null columns should be a subset of needed columns")
-        return df
 
-@app.route('/{}/contributor_reports/new_contributors_bar/'.format(AUGUR_API_VERSION), methods=["GET"])
+    return df
+
+@app.route(f'/{AUGUR_API_VERSION}/contributor_reports/new_contributors_bar/', methods=["GET"])
 def new_contributors_bar():
 
     repo_id, start_date, end_date, error = get_repo_id_start_date_and_end_date()
@@ -635,26 +633,7 @@ def new_contributors_bar():
             if (rank == 2 and contributor_type == 'drive_by') or (rank == 2 and contributor_type == 'repeat'):
                 continue
 
-            if contributor_type == 'repeat':
-                driver_df = repeats_df
-
-                caption = """This graph shows repeat contributors in the specified time period. Repeat contributors
-                    are contributors who have made {} or more contributions in {} days and their first contribution is 
-                    in the specified time period. New contributors are individuals who make their first contribution 
-                    in the specified time period."""
-
-            elif contributor_type == 'drive_by':
-
-                driver_df = drive_by_df
-
-                caption = """This graph shows fly by contributors in the specified time period. Fly by contributors 
-                are contributors who make less than the required {} contributions in {} days. New contributors are 
-                individuals who make their first contribution in the specified time period. Of course, then, “All 
-                fly-by’s are by definition first time contributors”. However, not all first time contributors are 
-                fly-by’s."""
-
-            elif contributor_type == 'All':
-
+            if contributor_type == 'All':
                 if rank == 1:
                     driver_df = all_df
                     # makes df with all first time contributors
@@ -663,15 +642,29 @@ def new_contributors_bar():
                     contribute multiple times. New contributors are individuals who make their first contribution 
                     in the specified time period."""
 
-                if rank == 2:
-
+                elif rank == 2:
                     driver_df = all_df
 
                     # creates df with all second time contributors
                     driver_df = driver_df.loc[driver_df['rank'] == 2]
                     caption = """This graph shows the second contribution of all
                             first time contributors in the specified time period."""
-                    # y_axis_label = 'Second Time Contributors'
+            elif contributor_type == 'drive_by':
+                driver_df = drive_by_df
+
+                caption = """This graph shows fly by contributors in the specified time period. Fly by contributors 
+                are contributors who make less than the required {} contributions in {} days. New contributors are 
+                individuals who make their first contribution in the specified time period. Of course, then, “All 
+                fly-by’s are by definition first time contributors”. However, not all first time contributors are 
+                fly-by’s."""
+
+            elif contributor_type == 'repeat':
+                driver_df = repeats_df
+
+                caption = """This graph shows repeat contributors in the specified time period. Repeat contributors
+                    are contributors who have made {} or more contributions in {} days and their first contribution is 
+                    in the specified time period. New contributors are individuals who make their first contribution 
+                    in the specified time period."""
 
             # filter by end_date, this is not done with the begin date filtering because a repeat contributor
             # will look like drive-by if the second contribution is removed by end_date filtering
@@ -693,14 +686,14 @@ def new_contributors_bar():
                 # used to format x-axis and title
                 group_by_format_string = "Year"
 
-            elif group_by == 'quarter' or group_by == 'month':
+            elif group_by in ['quarter', 'month']:
 
                 # set variables to group the data by quarter or month
                 if group_by == 'quarter':
                     date_column = 'quarter'
                     group_by_format_string = "Quarter"
 
-                elif group_by == 'month':
+                else:
                     date_column = 'yearmonth'
                     group_by_format_string = "Month"
 
@@ -722,17 +715,18 @@ def new_contributors_bar():
                 # create a dict convert an integer number into a word
             # used to turn the rank into a word, so it is nicely displayed in the title
             numbers = ['Zero', 'First', 'Second']
-            num_conversion_dict = {}
-            for i in range(1, len(numbers)):
-                num_conversion_dict[i] = numbers[i]
-            number = '{}'.format(num_conversion_dict[rank])
+            num_conversion_dict = {i: numbers[i] for i in range(1, len(numbers))}
+            number = f'{num_conversion_dict[rank]}'
 
             # define pot for bar chart
-            p = figure(x_range=data['dates'], plot_height=400, plot_width=plot_width,
-                        title="{}: {} {} Time Contributors Per {}".format(repo_dict[repo_id],
-                                                                            contributor_type.capitalize(), number,
-                                                                            group_by_format_string),
-                        y_range=(0, max(data['new_contributor_counts']) * 1.15), margin=(0, 0, 10, 0))
+            p = figure(
+                x_range=data['dates'],
+                plot_height=400,
+                plot_width=plot_width,
+                title=f"{repo_dict[repo_id]}: {contributor_type.capitalize()} {number} Time Contributors Per {group_by_format_string}",
+                y_range=(0, max(data['new_contributor_counts']) * 1.15),
+                margin=(0, 0, 10, 0),
+            )
 
             p.vbar(x=data['dates'], top=data['new_contributor_counts'], width=0.8)
 

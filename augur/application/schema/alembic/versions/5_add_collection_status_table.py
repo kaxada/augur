@@ -36,7 +36,7 @@ def upgrade():
 
     # add collection status for any existing repos
     conn = op.get_bind()
-    
+
     conn.execute(text("""
         UPDATE augur_operations.config
         SET value = '600'
@@ -44,9 +44,11 @@ def upgrade():
         AND setting_name = 'collection_interval';
     """))
 
-    # if the database has the old repo_collect phase then add delete it and add these rows otherwise just let the rows be added in the config during making install
-    result = conn.execute(text("""SELECT * FROM augur_operations.config WHERE section_name='Task_Routine' and setting_name='repo_collect_phase';""")).fetchall()
-    if result:
+    if result := conn.execute(
+        text(
+            """SELECT * FROM augur_operations.config WHERE section_name='Task_Routine' and setting_name='repo_collect_phase';"""
+        )
+    ).fetchall():
         print(result[0])
         print(dict(result[0]))
         value = dict(result[0])["value"]

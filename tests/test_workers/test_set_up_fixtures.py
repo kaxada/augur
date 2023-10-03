@@ -11,18 +11,16 @@ from workers.facade_worker.contributor_interfaceable.contributor_interface impor
 def poll_database_connection(database_string):
     print("Attempting to create db engine")
 
-    db = s.create_engine(database_string, poolclass=s.pool.NullPool,
-                         connect_args={'options': '-csearch_path={}'.format('augur_data')})
-
-    return db
+    return s.create_engine(
+        database_string,
+        poolclass=s.pool.NullPool,
+        connect_args={'options': '-csearch_path=augur_data'},
+    )
 
 
 def insert_sql_file(database_connection, fileString):
-    fd = open(fileString, 'r')
-
-    sqlFile = fd.read()
-    fd.close()
-
+    with open(fileString, 'r') as fd:
+        sqlFile = fd.read()
     # Get list of commmands
     sqlCommands = sqlFile.split(';')
 
@@ -37,11 +35,8 @@ def insert_sql_file(database_connection, fileString):
 
 
 def insert_json_file(database_connection, fileString, table):
-    jsonFile = open(fileString)
-
-    source_data = json.load(jsonFile)
-
-    jsonFile.close()
+    with open(fileString) as jsonFile:
+        source_data = json.load(jsonFile)
 
     # Actually insert the data to the table object passed in.
     database_connection.execute(table.insert().values(source_data))
@@ -61,7 +56,7 @@ def database_connection():
     ROOT_AUGUR_DIR = os.path.dirname(
         os.path.dirname(os.path.realpath(__file__)))
     ROOT_AUGUR_DIR = str(ROOT_AUGUR_DIR).split("augur")
-    ROOT_AUGUR_DIR = ROOT_AUGUR_DIR[0] + "augur"
+    ROOT_AUGUR_DIR = f"{ROOT_AUGUR_DIR[0]}augur"
 
     buildString = ROOT_AUGUR_DIR
 
@@ -80,18 +75,11 @@ def database_connection():
 
     databaseContainer.rename("Test_database")
 
-    DB_STR = 'postgresql://{}:{}@{}:{}/{}'.format(
-        "augur", "augur", "172.17.0.1", 5400, "test"
-    )
+    DB_STR = 'postgresql://augur:augur@172.17.0.1:5400/test'
 
     time.sleep(10)
 
-    # Get a database connection object from postgres to test connection and pass to test when ready
-    db = poll_database_connection(DB_STR)
-
-    # Setup complete, return the database object
-    yield db
-
+    yield poll_database_connection(DB_STR)
     # Cleanup the docker container by killing it.
     databaseContainer.kill()
     # Remove the name
@@ -149,15 +137,16 @@ class DummyFullWorker(ContributorInterfaceable):
     # This mirros the functionality of the definition found in worker_persistance to make
     # github related function calls much much easier to test.
     def initialize_database_connections(self):
-        DB_STR = 'postgresql://{}:{}@{}:{}/{}'.format(
-            "augur", "augur", "172.17.0.1", 5400, "test"
-        )
+        DB_STR = 'postgresql://augur:augur@172.17.0.1:5400/test'
 
         self.db_schema = 'augur_data'
         self.helper_schema = 'augur_operations'
 
-        self.helper_db = s.create_engine(DB_STR, poolclass=s.pool.NullPool,
-                                         connect_args={'options': '-csearch_path={}'.format(self.helper_schema)})
+        self.helper_db = s.create_engine(
+            DB_STR,
+            poolclass=s.pool.NullPool,
+            connect_args={'options': f'-csearch_path={self.helper_schema}'},
+        )
 
         metadata = s.MetaData()
         helper_metadata = s.MetaData()
@@ -173,8 +162,7 @@ class DummyFullWorker(ContributorInterfaceable):
         HelperBase.prepare()
         # So we can access all our tables when inserting, updating, etc
         for table in self.data_tables:
-            setattr(self, '{}_table'.format(table),
-                    Base.classes[table].__table__)
+            setattr(self, f'{table}_table', Base.classes[table].__table__)
 
         try:
             self.logger.info(HelperBase.classes.keys())
@@ -183,11 +171,9 @@ class DummyFullWorker(ContributorInterfaceable):
 
         for table in self.operations_tables:
             try:
-                setattr(self, '{}_table'.format(table),
-                        HelperBase.classes[table].__table__)
+                setattr(self, f'{table}_table', HelperBase.classes[table].__table__)
             except Exception as e:
-                self.logger.error(
-                    "Error setting attribute for table: {} : {}".format(table, e))
+                self.logger.error(f"Error setting attribute for table: {table} : {e}")
 
         #looks for api keys one folder before the root augur folder.
         insert_sql_file(self.db, "../oauth.sql")
@@ -198,7 +184,7 @@ class DummyFullWorker(ContributorInterfaceable):
                 'worker_history', 'history_id', operations_table=True) + 1
         except Exception as e:
             self.logger.info(f"Could not find max id. ERROR: {e}")
-        
+
         # Organize different api keys/oauths available
         self.logger.info("Initializing API key.")
         if 'gh_api_key' in self.config or 'gitlab_api_key' in self.config:

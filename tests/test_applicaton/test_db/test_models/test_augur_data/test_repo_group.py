@@ -21,9 +21,10 @@ def test_is_valid_repo_group_id(test_db_engine):
 
         with test_db_engine.connect() as connection:
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_repo_group_insert_statement(data["rg_ids"][0]))
+            query_statements = [
+                clear_tables_statement,
+                get_repo_group_insert_statement(data["rg_ids"][0]),
+            ]
             query_statements.append(get_repo_group_insert_statement(data["rg_ids"][1]))
             query_statements.append(get_repo_group_insert_statement(data["rg_ids"][2]))
             query = s.text("".join(query_statements))

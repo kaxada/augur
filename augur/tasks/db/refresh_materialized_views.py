@@ -66,64 +66,46 @@ def refresh_materialized_views():
             session.execute_sql(mv1_refresh)
     except Exception as e: 
         logger.info(f"error is {e}")
-        pass 
-
-
     try: 
         with DatabaseSession(logger, engine) as session:
             session.execute_sql(mv1_refresh)
     except Exception as e: 
         logger.info(f"error is {e}")
-        pass 
-
     try: 
         with DatabaseSession(logger, engine) as session:
             session.execute_sql(mv2_refresh)
     except Exception as e: 
         logger.info(f"error is {e}")
-        pass 
-
     try: 
         with DatabaseSession(logger, engine) as session:
             session.execute_sql(mv3_refresh)
     except Exception as e: 
         logger.info(f"error is {e}")
-        pass 
-
     try: 
         with DatabaseSession(logger, engine) as session:
             session.execute_sql(mv4_refresh)
     except Exception as e: 
         logger.info(f"error is {e}")
-        pass 
-
     try: 
         with DatabaseSession(logger, engine) as session:
             session.execute_sql(mv5_refresh)
     except Exception as e: 
         logger.info(f"error is {e}")
-        pass 
-
     try: 
         with DatabaseSession(logger, engine) as session:
             session.execute_sql(mv6_refresh)
     except Exception as e: 
         logger.info(f"error is {e}")
-        pass 
-
     try: 
         with DatabaseSession(logger, engine) as session:
             session.execute_sql(mv7_refresh)
     except Exception as e: 
         logger.info(f"error is {e}")
-        pass 
-
     try: 
         with DatabaseSession(logger, engine) as session:
             session.execute_sql(mv8_refresh)
     except Exception as e: 
-        logger.info(f"error is {e}")
-        pass 
+        logger.info(f"error is {e}") 
 
 
 

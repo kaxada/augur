@@ -53,12 +53,7 @@ def git_repo_initialize(session, repo_git):
     session.update_status('Fetching non-cloned repos')
     session.log_activity('Info', 'Fetching non-cloned repos')
 
-    # Get data as a list of dicts
-    # new_repos = session.fetchall_data_from_sql_text(query)#list(cfg.cursor)
-    row = Repo.get_by_repo_git(session, repo_git)
-
-    if row:
-
+    if row := Repo.get_by_repo_git(session, repo_git):
         session.log_activity(
             'Info', f"Fetching repo with repo id: {row.repo_id}")
 
@@ -85,7 +80,7 @@ def git_repo_initialize(session, repo_git):
             repo_name = repo_name[:repo_name.find('.git', 0)]
             session.log_activity(
                 'Info', f"Repo Name from facade05, line 93: {repo_name}")
-        
+
         path_identifier = f"{platform_org_git_url_section}{repo_name}".replace('/','-')
 
         # Get the full path to the directory where we'll clone the repo
@@ -94,7 +89,7 @@ def git_repo_initialize(session, repo_git):
         session.log_activity(
             'Info', f"Repo Path from facade05, line 86: {repo_path}")
 
-        
+
 
         # query = s.sql.text("""SELECT NULL FROM repo WHERE CONCAT(repo_group_id,'/',repo_path,repo_name) = :repo_group_id
         #    """).bindparams(repo_group_id=f"{row.repo_group_id}/{platform_org_git_url_section}{repo_name}")
@@ -172,7 +167,7 @@ def git_repo_initialize(session, repo_git):
 
             raise GitCloneError(f"Could not clone {git}")
 
-    session.log_activity('Info', f"Fetching new repos (complete)")
+    session.log_activity('Info', "Fetching new repos (complete)")
 
 
 # Deprecated functionality. No longer used
@@ -183,65 +178,6 @@ def check_for_repo_updates(session, repo_git):
     # update_frequency, mark its project for updating during the next analysis.
     raise NotImplementedError(
         "This functionality is deprecated and won't work with present facade versions")
-    session.update_status('Checking if any repos need to update')
-    session.log_activity('Info', 'Checking repos to update')
-
-    update_frequency = session.get_setting('update_frequency')
-
-    get_initialized_repos = s.sql.text("""SELECT repo_id FROM repo WHERE repo_status NOT LIKE 'New%' 
-        AND repo_status != 'Delete' 
-        AND repo_status != 'Analyze' AND repo_status != 'Empty'
-        AND repo_git = :value""").bindparams(value=repo_git)
-
-    # repos = session.fetchall_data_from_sql_text(get_initialized_repos)#list(cfg.cursor)
-    repo = session.execute_sql(get_initialized_repos).fetchone()
-
-    if repo:
-
-        # Figure out which repos have been updated within the waiting period
-
-        get_last_update = s.sql.text("""SELECT NULL FROM repos_fetch_log WHERE
-            repos_id=:repo_id AND status='Up-to-date' AND
-            date >= CURRENT_TIMESTAMP(6) - INTERVAL :update_freq HOUR """).bindparams(repo_id=repo['repo_id'], update_freq=update_frequency[0])
-
-        result = session.fetchall_data_from_sql_text(get_last_update)
-        # If the repo has not been updated within the waiting period, mark it.
-        # Also mark any other repos in the project, so we only recache the
-        # project once per waiting period.
-
-        if len(result) == 0:
-            mark_repo = s.sql.text("""UPDATE repo
-                SET repo_status='Update' 
-                        WHERE repo.ctid IN (
-                SELECT repo.ctid FROM repo JOIN repo_groups ON repo.repo_group_id=repo_groups.repo_group_id
-                AND repo.repo_id=:repo_id 
-                AND repo.repo_status != 'Empty')""").bindparams(repo_id=repo['repo_id'])
-
-            # ("UPDATE repos r JOIN projects p ON p.id = r.projects_id "
-            #     "SET status='Update' WHERE "
-            #     "r.id=%s and r.status != 'Empty'")
-
-            session.execute_sql(mark_repo)
-
-    # Mark the entire project for an update, so that under normal
-    # circumstances caches are rebuilt only once per waiting period.
-
-    update_project_status = s.sql.text("""UPDATE repo
-        SET repo_status='Update' 
-                WHERE repo.ctid IN (
-        SELECT repo.ctid FROM repo LEFT JOIN repo a ON repo.repo_group_id=a.repo_group_id
-        AND repo.repo_status='Update'
-        AND repo.repo_status != 'Analyze' 
-        AND repo.repo_status != 'Empty')
-        AND repo.repo_git = :value""").bindparams(value=repo_git)
-
-    # ("UPDATE repos r LEFT JOIN repos s ON r.projects_id=s.projects_id "
-    #     "SET r.status='Update' WHERE s.status='Update' AND "
-    #     "r.status != 'Analyze' AND r.status != 'Empty'")
-
-    session.insert_or_update_data(update_project_status)
-
-    session.log_activity('Info', 'Checking repos to update (complete)')
 
 # Deprecated. No longer used.
 
@@ -250,35 +186,12 @@ def force_repo_updates(session, repo_git):
     raise NotImplementedError(
         "This functionality is deprecated and won't work with present facade versions")
 
-# Set the status of all non-new repos to "Update".
-
-    session.update_status('Forcing all non-new repos to update')
-    session.log_activity('Info', 'Forcing repos to update')
-
-    get_repo_ids = s.sql.text("""UPDATE repo SET repo_status='Update' WHERE repo_status
-        NOT LIKE 'New%' AND repo_status!='Delete' AND repo_status !='Empty'
-        AND repo_git=:value""").bindparams(value=repo_git)
-    session.execute_sql(get_repo_ids)
-
-    session.log_activity('Info', 'Forcing repos to update (complete)')
-
 # Deprecated. No longer used.
 
 
 def force_repo_analysis(session, repo_git):
     raise NotImplementedError(
         "This functionality is deprecated and won't work with present facade versions")
-
-    session.update_status('Forcing all non-new repos to be analyzed')
-    session.log_activity('Info', 'Forcing repos to be analyzed')
-
-    set_to_analyze = s.sql.text("""UPDATE repo SET repo_status='Analyze' WHERE repo_status
-        NOT LIKE 'New%' AND repo_status!='Delete' AND repo_status != 'Empty'
-        AND repo_git=:repo_git_ident""").bindparams(repo_git_ident=repo_git)
-
-    session.execute_sql(set_to_analyze)
-
-    session.log_activity('Info', 'Forcing repos to be analyzed (complete)')
 
 
 def git_repo_updates(session, repo_git):
@@ -372,8 +285,6 @@ def git_repo_updates(session, repo_git):
         except Exception as e:
             session.log_activity(
                 'Verbose', f'Error code on branch change is {e}.')
-            pass
-
         finally:
 
             cmd = (f"git -C {absolute_path} pull")
@@ -457,8 +368,6 @@ def git_repo_updates(session, repo_git):
             except Exception as e:
 
                 session.log_activity('Verbose', f'Second pass failed: {e}.')
-                pass
-
         cmdpull2 = (f"git -C {absolute_path} pull")
 
         print(cmdpull2)
@@ -466,7 +375,7 @@ def git_repo_updates(session, repo_git):
 
         attempt += 1
 
-        # default_branch = ''
+            # default_branch = ''
 
     if return_code == 0:
 

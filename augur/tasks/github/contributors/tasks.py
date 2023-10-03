@@ -81,27 +81,23 @@ def retrieve_dict_data(url: str, key_auth, logger):
 
         page_data = response.json()
 
-        if "message" in page_data:
-
-            if page_data['message'] == "Not Found":
-                logger.info(
-                    "Github repo was not found or does not exist for endpoint: "
-                    f"{response.url}\n"
-                )
-                break
-
-            elif "You have exceeded a secondary rate limit. Please wait a few minutes before you try again" in page_data['message']:
-                logger.info('\n\n\n\nSleeping for 100 seconds due to secondary rate limit issue.\n\n\n\n')
-                time.sleep(100)
-                continue
-
-            elif "You have triggered an abuse detection mechanism." in page_data['message']:
-                #self.update_rate_limit(response, temporarily_disable=True,platform=platform)
-                continue
-        else:
+        if "message" not in page_data:
             return page_data
 
 
+        if page_data['message'] == "Not Found":
+            logger.info(
+                "Github repo was not found or does not exist for endpoint: "
+                f"{response.url}\n"
+            )
+            break
+
+        elif "You have exceeded a secondary rate limit. Please wait a few minutes before you try again" in page_data['message']:
+            logger.info('\n\n\n\nSleeping for 100 seconds due to secondary rate limit issue.\n\n\n\n')
+            time.sleep(100)
+        elif "You have triggered an abuse detection mechanism." in page_data['message']:
+            #self.update_rate_limit(response, temporarily_disable=True,platform=platform)
+            continue
     return None
 
 

@@ -25,10 +25,10 @@ def collect_github_repo_clones_data(repo_git: str) -> None:
         owner, repo = get_owner_repo(repo_git)
 
         logger.info(f"Collecting Github repository clone data for {owner}/{repo}")
-    
-        clones_data = retrieve_all_clones_data(repo_git, logger, manifest.key_auth)
 
-        if clones_data:
+        if clones_data := retrieve_all_clones_data(
+            repo_git, logger, manifest.key_auth
+        ):
             process_clones_data(clones_data, f"{owner}/{repo}: Traffic task", repo_id, manifest.augur_db)
         else:
             logger.info(f"{owner}/{repo} has no clones")

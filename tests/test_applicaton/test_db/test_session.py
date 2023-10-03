@@ -153,7 +153,7 @@ def test_insert_data_with_bulk(test_db_engine):
             for data in result:
                 dict_data = dict(data)
 
-                for key in dict_data.keys():
+                for key in dict_data:
                     assert data[key] == dict_data[key]
     finally:
 
@@ -196,12 +196,63 @@ def test_insert_data_partial_update(test_db_engine):
             connection.execute(f"DELETE FROM augur_data.contributors WHERE cntrb_id='{cntrb_id}';")
 
 
-issue_data_with_null_strings = []
-issue_data_with_null_strings.append({'cntrb_id': None, 'repo_id': 1, 'reporter_id': None, 'pull_request': None, 'pull_request_id': None, 'created_at': '2016-04-06T08:08:16Z', 'issue_title': '(Bundler: :GemRequireError)', 'issue_body': """I get this one in the clean jekyll project.\n\nResolving dependencies...\nUsing colorator 0.1\nUsing ffi 1.9.10\nUsing htmlentities 4.3.4\nUsing sass 3.4.22\nUsing rb-fsevent 0.9.7\nUsing kramdown 1.10.0\nUsing liquid 3.0.6\nUsing mercenary 0.3.5\nUsing rouge 1.10.1\nUsing safe_yaml 1.0.4\nUsing bundler 1.11.2\nUsing rb-inotify 0.9.7\nUsing jekyll-sass-converter 1.4.0\nUsing listen 3.0.6\nUsing jekyll-watch 1.3.1\nUsing jekyll 3.1.2\nUsing jekyll_pages_api 0.1.5\nUsing jekyll_pages_api_search 0.4.4\nBundle complete! 1 Gemfile dependency
+issue_data_with_null_strings = [
+    {
+        'cntrb_id': None,
+        'repo_id': 1,
+        'reporter_id': None,
+        'pull_request': None,
+        'pull_request_id': None,
+        'created_at': '2016-04-06T08:08:16Z',
+        'issue_title': '(Bundler: :GemRequireError)',
+        'issue_body': """I get this one in the clean jekyll project.\n\nResolving dependencies...\nUsing colorator 0.1\nUsing ffi 1.9.10\nUsing htmlentities 4.3.4\nUsing sass 3.4.22\nUsing rb-fsevent 0.9.7\nUsing kramdown 1.10.0\nUsing liquid 3.0.6\nUsing mercenary 0.3.5\nUsing rouge 1.10.1\nUsing safe_yaml 1.0.4\nUsing bundler 1.11.2\nUsing rb-inotify 0.9.7\nUsing jekyll-sass-converter 1.4.0\nUsing listen 3.0.6\nUsing jekyll-watch 1.3.1\nUsing jekyll 3.1.2\nUsing jekyll_pages_api 0.1.5\nUsing jekyll_pages_api_search 0.4.4\nBundle complete! 1 Gemfile dependency
                                      18 gems now installed.\nUse `bundle show [gemname]` to see where a bundled gem is installed.\nAndreass-MacBook-Pro: maukasta-blogi andreaskoutsoukos$ \nAndreass-MacBook-Pro: maukasta-blogi andreaskoutsoukos$ jekyll serve\x00\x00\nWARN: Unresolved specs during Gem: : Specification.reset: \n      jekyll-watch (~ > 1.1)\nWARN: Clearing out unresolved specs.\nPlease report a bug if this causes problems.\n/Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb: 80: in `rescue in block (2 levels) in require': There was an error while trying to load the gem 'jekyll_pages_api_search'. (Bundler::GemRequireError)\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb:76:in`block (2 levels) in require'\n        from / Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb: 72: in `each'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb:72:in`block in require'\n        from / Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb: 61: in `each'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb:61:in`require'\n        from / Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler.rb: 99: in `require'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/jekyll-3.1.2/lib/jekyll/plugin_manager.rb:34:in`require_from_bundler'\n        from / Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/jekyll-3.1.2/bin/jekyll: 9: in `<top (required) > '\n        from /Users/andreaskoutsoukos/.rbenv/versions/2.2.1/bin/jekyll:23:in`load'\n        from / Users/andreaskoutsoukos/.rbenv/versions/2.2.1/bin/jekyll: 23: in `<main > '\n" 'comment_count': 0""",
-                                    'comment_count': 0, 'updated_at': '2016-04-06T08:08:16Z', 'closed_at': None, 'repository_url': 'https: //api.github.com/repos/18F/jekyll_pages_api_search', 'issue_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/31', 'labels_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/30/labels{/name}', 'comments_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/30/comments', 'events_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/30/events', 'html_url': 'https://github.com/18F/jekyll_pages_api_search/issues/30', 'issue_state': 'open', 'issue_node_id': 'MDU6SXNzdWUxNDYyMjcwNTU=', 'gh_issue_id': 146227055, 'gh_issue_number': 30, 'gh_user_id': 196690, 'tool_source': 'Issue Task', 'tool_version': '2.0', 'data_source': 'Github API'})
-issue_data_with_null_strings.append({'cntrb_id': None, 'repo_id': 1, 'reporter_id': None, 'pull_request': None, 'pull_request_id': None, 'created_at': '2016-04-06T08:08:16Z', 'issue_title': '(Bundler: :GemRequireError)', 'issue_body': "I get this one in the clean jekyll project.\n\nResolving dependencies...\nUsing colorator 0.1\nUsing ffi 1.9.10\nUsing htmlentities 4.3.4\nUsing sass 3.4.22\nUsing rb-fsevent 0.9.7\nUsing kramdown 1.10.0\nUsing liquid 3.0.6\nUsing mercenary 0.3.5\nUsing rouge 1.10.1\nUsing safe_yaml 1.0.4\nUsing bundler 1.11.2\nUsing rb-inotify 0.9.7\nUsing jekyll-sass-converter 1.4.0\nUsing listen 3.0.6\nUsing jekyll-watch 1.3.1\nUsing jekyll 3.1.2\nUsing jekyll_pages_api 0.1.5\nUsing jekyll_pages_api_search 0.4.4\nBundle complete! 1 Gemfile dependency, 18 gems now installed.\nUse `bundle show [gemname]` to see where a bundled gem is installed.\nAndreass-MacBook-Pro:maukasta-blogi andreaskoutsoukos$ \nAndreass-MacBook-Pro:maukasta-blogi andreaskoutsoukos$ jekyll serve\x00\x00\nWARN: Unresolved specs during Gem::Specification.reset:\n      jekyll-watch (~> 1.1)\nWARN: Clearing out unresolved specs.\nPlease report a bug if this causes problems.\n/Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb:80:in `rescue in block (2 levels) in require': There was an error while trying to load the gem 'jekyll_pages_api_search'. (Bundler::GemRequireError)\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb:76:in`block (2 levels) in require'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb:72:in `each'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb:72:in`block in require'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb:61:in `each'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb:61:in`require'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler.rb:99:in `require'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/jekyll-3.1.2/lib/jekyll/plugin_manager.rb:34:in`require_from_bundler'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/jekyll-3.1.2/bin/jekyll:9:in `<top (required)>'\n        from /Users/andreaskoutsoukos/.rbenv/versions/2.2.1/bin/jekyll:23:in`load'\n        from /Users/andreaskoutsoukos/.rbenv/versions/2.2.1/bin/jekyll:23:in `<main>'\n",
-                                    'comment_count': 0, 'updated_at': '2016-04-06T08:08:16Z', 'closed_at': None, 'repository_url': 'https: //api.github.com/repos/18F/jekyll_pages_api_search', 'issue_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/34', 'labels_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/30/labels{/name}', 'comments_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/30/comments', 'events_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/30/events', 'html_url': 'https://github.com/18F/jekyll_pages_api_search/issues/30', 'issue_state': 'open', 'issue_node_id': 'MDU6SXNzdWUxNDYyMjcwNTU=', 'gh_issue_id': 146227056, 'gh_issue_number': 30, 'gh_user_id': 196690, 'tool_source': 'Issue Task', 'tool_version': '2.0', 'data_source': 'Github API'})
+        'comment_count': 0,
+        'updated_at': '2016-04-06T08:08:16Z',
+        'closed_at': None,
+        'repository_url': 'https: //api.github.com/repos/18F/jekyll_pages_api_search',
+        'issue_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/31',
+        'labels_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/30/labels{/name}',
+        'comments_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/30/comments',
+        'events_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/30/events',
+        'html_url': 'https://github.com/18F/jekyll_pages_api_search/issues/30',
+        'issue_state': 'open',
+        'issue_node_id': 'MDU6SXNzdWUxNDYyMjcwNTU=',
+        'gh_issue_id': 146227055,
+        'gh_issue_number': 30,
+        'gh_user_id': 196690,
+        'tool_source': 'Issue Task',
+        'tool_version': '2.0',
+        'data_source': 'Github API',
+    },
+    {
+        'cntrb_id': None,
+        'repo_id': 1,
+        'reporter_id': None,
+        'pull_request': None,
+        'pull_request_id': None,
+        'created_at': '2016-04-06T08:08:16Z',
+        'issue_title': '(Bundler: :GemRequireError)',
+        'issue_body': "I get this one in the clean jekyll project.\n\nResolving dependencies...\nUsing colorator 0.1\nUsing ffi 1.9.10\nUsing htmlentities 4.3.4\nUsing sass 3.4.22\nUsing rb-fsevent 0.9.7\nUsing kramdown 1.10.0\nUsing liquid 3.0.6\nUsing mercenary 0.3.5\nUsing rouge 1.10.1\nUsing safe_yaml 1.0.4\nUsing bundler 1.11.2\nUsing rb-inotify 0.9.7\nUsing jekyll-sass-converter 1.4.0\nUsing listen 3.0.6\nUsing jekyll-watch 1.3.1\nUsing jekyll 3.1.2\nUsing jekyll_pages_api 0.1.5\nUsing jekyll_pages_api_search 0.4.4\nBundle complete! 1 Gemfile dependency, 18 gems now installed.\nUse `bundle show [gemname]` to see where a bundled gem is installed.\nAndreass-MacBook-Pro:maukasta-blogi andreaskoutsoukos$ \nAndreass-MacBook-Pro:maukasta-blogi andreaskoutsoukos$ jekyll serve\x00\x00\nWARN: Unresolved specs during Gem::Specification.reset:\n      jekyll-watch (~> 1.1)\nWARN: Clearing out unresolved specs.\nPlease report a bug if this causes problems.\n/Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb:80:in `rescue in block (2 levels) in require': There was an error while trying to load the gem 'jekyll_pages_api_search'. (Bundler::GemRequireError)\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb:76:in`block (2 levels) in require'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb:72:in `each'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb:72:in`block in require'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb:61:in `each'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler/runtime.rb:61:in`require'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/bundler-1.11.2/lib/bundler.rb:99:in `require'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/jekyll-3.1.2/lib/jekyll/plugin_manager.rb:34:in`require_from_bundler'\n        from /Users/andreaskoutsoukos/.rvm/gems/ruby-2.2.1/gems/jekyll-3.1.2/bin/jekyll:9:in `<top (required)>'\n        from /Users/andreaskoutsoukos/.rbenv/versions/2.2.1/bin/jekyll:23:in`load'\n        from /Users/andreaskoutsoukos/.rbenv/versions/2.2.1/bin/jekyll:23:in `<main>'\n",
+        'comment_count': 0,
+        'updated_at': '2016-04-06T08:08:16Z',
+        'closed_at': None,
+        'repository_url': 'https: //api.github.com/repos/18F/jekyll_pages_api_search',
+        'issue_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/34',
+        'labels_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/30/labels{/name}',
+        'comments_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/30/comments',
+        'events_url': 'https://api.github.com/repos/18F/jekyll_pages_api_search/issues/30/events',
+        'html_url': 'https://github.com/18F/jekyll_pages_api_search/issues/30',
+        'issue_state': 'open',
+        'issue_node_id': 'MDU6SXNzdWUxNDYyMjcwNTU=',
+        'gh_issue_id': 146227056,
+        'gh_issue_number': 30,
+        'gh_user_id': 196690,
+        'tool_source': 'Issue Task',
+        'tool_version': '2.0',
+        'data_source': 'Github API',
+    },
+]
 
 def test_insert_issue_data_with_invalid_strings(test_db_engine):
 
@@ -230,9 +281,9 @@ def test_insert_issue_data_with_invalid_strings(test_db_engine):
 
                 issue_return_data = session.insert_data(issue_data_with_null_strings, Issue, issue_natural_keys,
                                                     return_columns=issue_return_columns, string_fields=issue_string_columns)
-                
+
                 data_inserted_count = len(issue_data_with_null_strings)
-                result = connection.execute(f"Select * FROM augur_data.issues;").fetchall()
+                result = connection.execute("Select * FROM augur_data.issues;").fetchall()
 
                 assert issue_return_data is not None
                 assert len(issue_return_data) == data_inserted_count

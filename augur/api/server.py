@@ -292,20 +292,18 @@ def create_cache_manager() -> CacheManager:
         manager of the cache
     """
 
-    cache_config = {
-    'cache.type': 'file',
-    'cache.data_dir': 'runtime/cache/',
-    'cache.lock_dir': 'runtime/cache/'
-}
+        cache_config = {
+        'cache.type': 'file',
+        'cache.data_dir': 'runtime/cache/',
+        'cache.lock_dir': 'runtime/cache/'
+    }
 
     if not os.path.exists(cache_config['cache.data_dir']):
         os.makedirs(cache_config['cache.data_dir'])
     if not os.path.exists(cache_config['cache.lock_dir']):
         os.makedirs(cache_config['cache.lock_dir'])
     cache_parsed = parse_cache_config_options(cache_config)
-    cache = CacheManager(**cache_parsed)
-
-    return cache
+    return CacheManager(**cache_parsed)
 
 def get_server_cache(config, cache_manager) -> Cache:
     """Create the server cache, set expiration, and clear

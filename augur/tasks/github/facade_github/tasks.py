@@ -21,11 +21,11 @@ def process_commit_metadata(logger,db,auth,contributorQueue,repo_id,platform_id)
     for contributor in contributorQueue:
         # Get the email from the commit data
         email = contributor['email_raw'] if 'email_raw' in contributor else contributor['email']
-    
+
         name = contributor['name']
 
         # check the email to see if it already exists in contributor_aliases
-        
+
         # Look up email to see if resolved
         query = db.query(ContributorsAlias).filter_by(alias_email=email)
         alias_table_data = execute_session_query(query, 'all')
@@ -35,10 +35,10 @@ def process_commit_metadata(logger,db,auth,contributorQueue,repo_id,platform_id)
                 f"Email {email} has been resolved earlier.")
 
             continue
-        
+
         #Check the unresolved_commits table to avoid hitting endpoints that we know don't have relevant data needlessly
-        
-            
+
+
         query = db.query(UnresolvedCommitEmail).filter_by(name=name)
         unresolved_query_result = execute_session_query(query, 'all')
 
@@ -48,38 +48,37 @@ def process_commit_metadata(logger,db,auth,contributorQueue,repo_id,platform_id)
             continue
 
         login = None
-    
+
         #Check the contributors table for a login for the given name
 
         query = db.query(Contributor).filter_by(cntrb_full_name=name)
-        contributors_with_matching_name = execute_session_query(query, 'first')
-
-        if not contributors_with_matching_name:
-            logger.debug("Failed local login lookup")
-        else:
+        if contributors_with_matching_name := execute_session_query(
+            query, 'first'
+        ):
             login = contributors_with_matching_name.gh_login
-        
 
+
+        else:
+            logger.debug("Failed local login lookup")
         # Try to get the login from the commit sha
-        if login == None or login == "":
+        if login is None or login == "":
             login = get_login_with_commit_hash(logger,db,auth,contributor, repo_id)
-    
-        if login == None or login == "":
+
+        if login is None or login == "":
             logger.info("Failed to get login from commit hash")
             # Try to get the login from supplemental data if not found with the commit hash
             login = get_login_with_supplemental_data(logger, db, auth,contributor)
-    
-        if login == None or login == "":
+
+        if login is None or login == "":
             logger.error("Failed to get login from supplemental data!")
             continue
 
-        url = ("https://api.github.com/users/" + login)
+        url = f"https://api.github.com/users/{login}"
 
         user_data, _ = retrieve_dict_from_endpoint(logger, auth, url)
 
-        if user_data == None:
-            logger.warning(
-                f"user_data was unable to be reached. Skipping...")
+        if user_data is None:
+            logger.warning("user_data was unable to be reached. Skipping...")
             continue
 
         # Use the email found in the commit data if api data is NULL
@@ -131,10 +130,10 @@ def process_commit_metadata(logger,db,auth,contributorQueue,repo_id,platform_id)
         }
 
 
-        
+
         #Executes an upsert with sqlalchemy 
         cntrb_natural_keys = ['cntrb_id']
-        
+
         db.insert_data(cntrb,Contributor,cntrb_natural_keys)
 
 
@@ -147,7 +146,7 @@ def process_commit_metadata(logger,db,auth,contributorQueue,repo_id,platform_id)
             logger.info(
                 f"Contributor id not able to be found in database despite the user_id existing. Something very wrong is happening. Error: {e}")
             return 
-        
+
 
         #Replace each instance of a single or double quote with escape characters 
         #for postgres
@@ -169,8 +168,8 @@ def process_commit_metadata(logger,db,auth,contributorQueue,repo_id,platform_id)
             logger.info(
                 f"Deleting now resolved email failed with error: {e}")
             raise e
-    
-        
+
+
     return
 
 
@@ -212,7 +211,8 @@ def insert_facade_contributors(repo_id):
         # in the contributors table or the contributors_aliases table.
 
         manifest.logger.info(
-        "Beginning process to insert contributors from facade commits for repo w entry info: {}\n".format(repo_id))
+            f"Beginning process to insert contributors from facade commits for repo w entry info: {repo_id}\n"
+        )
         new_contrib_sql = s.sql.text("""
                 SELECT DISTINCT
                     commits.cmt_author_name AS NAME,
@@ -264,7 +264,7 @@ def insert_facade_contributors(repo_id):
         process_commit_metadata(manifest.logger,manifest.augur_db,manifest.key_auth,list(new_contribs),repo_id,manifest.platform_id)
 
         manifest.logger.debug("DEBUG: Got through the new_contribs")
-    
+
 
     with FacadeSession(logger) as session:
         # sql query used to find corresponding cntrb_id's of emails found in the contributor's table

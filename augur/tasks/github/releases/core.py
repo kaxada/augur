@@ -163,7 +163,7 @@ def fetch_data(key_auth, logger, github_url, repo_id, tag_only = False):
     query = get_query(logger, owner, repo, tag_only)
 
     # Hit the graphql endpoint
-    logger.info("Hitting endpoint: {} ...\n".format(url))
+    logger.info(f"Hitting endpoint: {url} ...\n")
     data = request_graphql_dict(key_auth,logger, url, query)
 
     if 'data' in data:
@@ -190,11 +190,13 @@ def releases_model(augur_db, key_auth, logger, repo_git, repo_id):
                     #self.insert_release(task, repo_id, data['owner'], release)
                     insert_release(augur_db, logger, repo_id, data['owner'], release)
                 else:
-                    logger.info("There's no release to insert. Current node is not available in releases: {}\n".format(n))
-        elif 'edges' in data['releases'] and not data['releases']['edges']:
+                    logger.info(
+                        f"There's no release to insert. Current node is not available in releases: {n}\n"
+                    )
+        elif 'edges' in data['releases']:
             logger.info("Searching for tags instead of releases...")
             data = fetch_data(key_auth, logger, repo_git, repo_id,True)
-            logger.info("refs value is: {}\n".format(data))
+            logger.info(f"refs value is: {data}\n")
             if 'refs' in data:
                 if 'edges' in data['refs']:
                     for n in data['refs']['edges']:
@@ -203,12 +205,18 @@ def releases_model(augur_db, key_auth, logger, repo_git, repo_id):
                             #self.insert_release(task, repo_id, data['owner'], release, True)
                             insert_release(augur_db,logger, repo_id, data['owner'], release, True)
                         else:
-                            logger.info("There's no release to insert. Current node is not available in releases: {}\n".format(n))
+                            logger.info(
+                                f"There's no release to insert. Current node is not available in releases: {n}\n"
+                            )
                 else:
-                    logger.info("There are no releases to insert for current repository: {}\n".format(data))
+                    logger.info(
+                        f"There are no releases to insert for current repository: {data}\n"
+                    )
             else:
-                logger.info("There are no refs in data: {}\n".format(data))
+                logger.info(f"There are no refs in data: {data}\n")
         else:
-            logger.info("There are no releases to insert for current repository: {}\n".format(data))
+            logger.info(
+                f"There are no releases to insert for current repository: {data}\n"
+            )
     else:
-        logger.info("Graphql response does not contain repository: {}\n".format(data))
+        logger.info(f"Graphql response does not contain repository: {data}\n")

@@ -14,22 +14,24 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
         print(json_data)
 
         if "path" not in json_data:
-            print("'path' is missing for data: " + json_data)
+            print(f"'path' is missing for data: {json_data}")
             return
         log_file = Path(json_data["path"]).stem
 
         worker_name = re.search("[a-z_]{1,20}worker", log_file).group()
         if not worker_name:
-            print("Failed to get worker name, so cannot associate input data with any augur worker. Data: " + json_data)
+            print(
+                f"Failed to get worker name, so cannot associate input data with any augur worker. Data: {json_data}"
+            )
             return
 
         if "error" not in json_data:
-            print("'error' is missing for data: " + json_data)
+            print(f"'error' is missing for data: {json_data}")
             return
         if "@timestamp" not in json_data:
-            print("'@timestamp' is missing for data: " + json_data)
+            print(f"'@timestamp' is missing for data: {json_data}")
             return
-        data = """
+        return """
 
 <table class="%s">
     <tr>
@@ -49,9 +51,8 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
             worker_name,
             json_data["error"],
             json_data["path"],
-            json_data["@timestamp"]
+            json_data["@timestamp"],
         )
-        return data
 
     def do_GET(self):
         logging.error(self.headers)
@@ -65,7 +66,7 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(payload)
         html = self.generateHTML(data)
         if not html:
-            print("Failed to generate html form data: " + data)
+            print(f"Failed to generate html form data: {data}")
         with open("index.html","a") as fp:
             fp.write(html)
 

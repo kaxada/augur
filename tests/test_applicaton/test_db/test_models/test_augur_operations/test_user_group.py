@@ -32,12 +32,13 @@ def test_add_user_group(test_db_engine):
                 ],
                 "group_names": ["test_group", "test_group_2"]}
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-
-            for user in data["users"]:
-                query_statements.append(get_user_insert_statement(user["id"], user["username"], user["email"]))
-            
+            query_statements = [clear_tables_statement]
+            query_statements.extend(
+                get_user_insert_statement(
+                    user["id"], user["username"], user["email"]
+                )
+                for user in data["users"]
+            )
             query = s.text("".join(query_statements))
 
             connection.execute(query)
@@ -79,13 +80,17 @@ def test_add_user_group(test_db_engine):
             assert result is not None
             assert len(result) == 3
 
-            query = s.text("""SELECT * FROM "augur_operations"."user_groups" WHERE "user_id"={};""".format(data["users"][0]["id"]))
+            query = s.text(
+                f"""SELECT * FROM "augur_operations"."user_groups" WHERE "user_id"={data["users"][0]["id"]};"""
+            )
 
             result = connection.execute(query).fetchall()
             assert result is not None
             assert len(result) == 2
 
-            query = s.text("""SELECT * FROM "augur_operations"."user_groups" WHERE "user_id"={};""".format(data["users"][1]["id"]))
+            query = s.text(
+                f"""SELECT * FROM "augur_operations"."user_groups" WHERE "user_id"={data["users"][1]["id"]};"""
+            )
 
             result = connection.execute(query).fetchall()
             assert result is not None
@@ -123,13 +128,13 @@ def test_convert_group_name_to_id(test_db_engine):
                 },
             ]
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_user_insert_statement(user_id))
-
-            for group in groups:
-                query_statements.append(get_user_group_insert_statement(user_id, group["group_name"], group["group_id"]))
-
+            query_statements = [clear_tables_statement, get_user_insert_statement(user_id)]
+            query_statements.extend(
+                get_user_group_insert_statement(
+                    user_id, group["group_name"], group["group_id"]
+                )
+                for group in groups
+            )
             connection.execute("".join(query_statements))
 
         with DatabaseSession(logger, test_db_engine) as session:
@@ -187,13 +192,13 @@ def test_remove_user_group(test_db_engine):
                 }
             ]
 
-            query_statements = []
-            query_statements.append(clear_tables_statement)
-            query_statements.append(get_user_insert_statement(user_id))
-
-            for group in groups:
-                query_statements.append(get_user_group_insert_statement(user_id, group["group_name"], group["group_id"]))
-
+            query_statements = [clear_tables_statement, get_user_insert_statement(user_id)]
+            query_statements.extend(
+                get_user_group_insert_statement(
+                    user_id, group["group_name"], group["group_id"]
+                )
+                for group in groups
+            )
             query_statements.append(get_repo_group_insert_statement(rg_id))
             query_statements.append(get_repo_insert_statement(repo_id, rg_id))
             query_statements.append(get_user_repo_insert_statement(repo_id, groups[0]["group_id"]))

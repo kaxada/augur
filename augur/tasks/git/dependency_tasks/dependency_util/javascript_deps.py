@@ -6,11 +6,9 @@ def get_files(path):
 	#copied from example on https://docs.python.org/3/library/pathlib.html
 	dir = path
 	p = Path(dir)
-	files = list(p.glob('**/*.js'))
-	return files
+	return list(p.glob('**/*.js'))
 	
 def get_deps_for_file(path):
-	f = open(path, 'r')
-	matches = re.findall("import\s*(\w*)", f.read())
-	f.close()
+	with open(path, 'r') as f:
+		matches = re.findall("import\s*(\w*)", f.read())
 	return matches

@@ -24,11 +24,15 @@ def upgrade():
     conn = op.get_bind()
 
     #Remove constraint being initially deferred.
-    conn.execute(text(f"""
+    conn.execute(
+        text(
+            """
     ALTER TABLE "augur_data"."repo_labor" 
         DROP CONSTRAINT IF EXISTS "rl-unique",
         ADD CONSTRAINT "rl-unique" UNIQUE ("repo_id", "rl_analysis_date", "file_path", "file_name");
-    """))
+    """
+        )
+    )
     """
     
     """
@@ -40,10 +44,14 @@ def downgrade():
     conn = op.get_bind()
 
     #Make unique initially deferred
-    conn.execute(text(f"""
+    conn.execute(
+        text(
+            """
     ALTER TABLE "augur_data"."repo_labor" 
         DROP CONSTRAINT IF EXISTS "rl-unique",
         ADD CONSTRAINT "rl-unique" UNIQUE ("repo_id", "rl_analysis_date", "file_path", "file_name") DEFERRABLE INITIALLY DEFERRED;
-    """))
+    """
+        )
+    )
 
     # ### end Alembic commands ###

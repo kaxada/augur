@@ -18,7 +18,7 @@ from augur.api.routes import AUGUR_API_VERSION
 logger = logging.getLogger(__name__)
 
 
-@app.route('/{}/batch'.format(AUGUR_API_VERSION), methods=['GET', 'POST'])
+@app.route(f'/{AUGUR_API_VERSION}/batch', methods=['GET', 'POST'])
 def batch():
     """
     Execute multiple requests, submitted as a batch.
@@ -36,16 +36,14 @@ def batch():
 
     responses = []
 
-    for index, req in enumerate(requests):
-
-
+    for req in requests:
         method = req['method']
         path = req['path']
         body = req.get('body', None)
 
         try:
 
-            logger.debug('batch-internal-loop: %s %s' % (method, path))
+            logger.debug(f'batch-internal-loop: {method} {path}')
 
             with app.server.app.context():
                 with app.test_request_context(path,
@@ -101,7 +99,7 @@ def batch():
 @apiDescription Returns metadata of batch requests
 POST JSON of API requests metadata
 """
-@app.route('/{}/batch/metadata'.format(AUGUR_API_VERSION), methods=['GET', 'POST'])
+@app.route(f'/{AUGUR_API_VERSION}/batch/metadata', methods=['GET', 'POST'])
 def batch_metadata():
     """
     Returns endpoint metadata in batch format
@@ -118,13 +116,13 @@ def batch_metadata():
 
     responses = []
 
-    for index, req in enumerate(requests):
+    for req in requests:
         method = req['method']
         path = req['path']
         body = req.get('body', None)
 
         try:
-            logger.info('batch endpoint: ' + path)
+            logger.info(f'batch endpoint: {path}')
             with app.server.app.context():
                 with app.test_request_context(path,
                                                 method=method,

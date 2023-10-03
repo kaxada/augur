@@ -35,7 +35,7 @@ def loadSettings():
     else:
         with open(configFilePath) as file:
             settings = yaml.load(file, Loader=yaml.FullLoader)
-    
+
     # # Ensure that the cache directory exists and is valid
     # cachePath = Path(settings["caching"])
 
@@ -44,12 +44,11 @@ def loadSettings():
     if not cachePath.is_dir():
         if cachePath.is_file():
             raise Exception(f"Cannot initialize caching: cache path [{cachePath}] is a file")
-        else:
-            try:
-                cachePath.mkdir(parents=True)
-                logger.info("cache directory initialized")
-            except Exception as err:
-                raise Exception(f"Cannot initialize caching: could not create cache directory [{cachePath}]")
+        try:
+            cachePath.mkdir(parents=True)
+            logger.info("cache directory initialized")
+        except Exception as err:
+            raise Exception(f"Cannot initialize caching: could not create cache directory [{cachePath}]")
 
     # Use the resolved path for cache directory access
     settings["caching"] = cachePath
@@ -57,12 +56,11 @@ def loadSettings():
 """ ----------------------------------------------------------------
 """
 def getSetting(key, section = "View"):
-    if section == "View":
-        if key == "serving":
-            return "http://127.0.0.1:5000/api/unstable"
-        return settings[key]
-    else:
+    if section != "View":
         return config.get_value(section, key)
+    if key == "serving":
+        return "http://127.0.0.1:5000/api/unstable"
+    return settings[key]
 
 loadSettings()
 
@@ -100,20 +98,19 @@ cache_files_requested = []
 """
 def cacheFileExists(filename):
     cache_file = Path(filename)
-    if cache_file.is_file():
-        if(getSetting('cache_expiry') > 0):
-            cache_file_age = time.time() - cache_file.stat().st_mtime
-            if(cache_file_age > getSetting('cache_expiry')):
-                try:
-                    cache_file.unlink()
-                    logger.info(f"Cache file {filename} removed due to expiry")
-                    return False
-                except Exception as e:
-                    logger.error("Error: cache file age exceeds expiry limit, but an exception occurred while attempting to remove")
-                    logger.error(e)
-        return True
-    else:
+    if not cache_file.is_file():
         return False
+    if(getSetting('cache_expiry') > 0):
+        cache_file_age = time.time() - cache_file.stat().st_mtime
+        if(cache_file_age > getSetting('cache_expiry')):
+            try:
+                cache_file.unlink()
+                logger.info(f"Cache file {filename} removed due to expiry")
+                return False
+            except Exception as e:
+                logger.error("Error: cache file age exceeds expiry limit, but an exception occurred while attempting to remove")
+                logger.error(e)
+    return True
 
 """ ----------------------------------------------------------------
 """
@@ -138,9 +135,9 @@ def download(url, cmanager, filename, image_cache, image_id, repo_id = None):
     try:
         response = cmanager.request('GET', url)
     except Exception as e:
-        logger.error("Could not make request: " + str(e))
+        logger.error(f"Could not make request: {str(e)}")
         raise e
-    
+
     if "json" in response.headers['Content-Type']:
         logger.warn(f"repo {repo_id}: unexpected json response in image request")
         logger.warn(f"  response: {response.data.decode('utf-8')}")
@@ -150,7 +147,7 @@ def download(url, cmanager, filename, image_cache, image_id, repo_id = None):
         image_cache[image_id]['exists'] = True
         try:
             with open(filename, 'wb') as f:
-                logger.info("Writing image: " + str(filename))
+                logger.info(f"Writing image: {str(filename)}")
                 f.write(response.data)
         except Exception as err:
             logger.error("An exception occurred writing a cache file to disk")
@@ -164,9 +161,7 @@ def requestReports(repo_id):
         return
 
     # initialize a new request entry to hold the resulting data
-    report_requests[repo_id] = {}
-    report_requests[repo_id]['complete'] = False
-
+    report_requests[repo_id] = {'complete': False}
     host = getSetting("host", "Server")
     port = getSetting("port", "Server")
 
@@ -196,7 +191,7 @@ def requestReports(repo_id):
             # Where are we downloading the image from
             image_url = f"{host}:{port}" + url_for(image['url'], repo_id = repo_id)
             # f"{getSetting('serving')}/{image['url']}?repo_id={repo_id}"
-            
+
             # Add a request for this image to the thread pool using the download function
             thread_pool.submit(download, image_url, connection_mgr, filename, reportImages, image['id'], repo_id)
 
@@ -234,30 +229,29 @@ renderRepos:
 """
 def renderRepos(view, query, data, sorting = None, rev = False, page = None, filter = False, pageSource = "repo_table_view", sortBasis = None):
     pagination_offset = getSetting('pagination_offset')
-    
+
     """ ----------
         If the data does not exist, we cannot construct the table to display on
         site. Rendering the table module without data displays an error message
     """
-    if(data is None):
-        return render_template('index.j2', body="repos-" + view, title="Repos")
+    if (data is None):
+        return render_template('index.j2', body=f"repos-{view}", title="Repos")
 
     # If a query exists and filtering is set to true, attempt to filter the data
-    if((query is not None) and filter):
-        results = []
-        for repo in data:
-            if (query in repo["repo_name"]) or (query == str(repo["repo_group_id"])) or (query in repo["rg_name"]):
-                results.append(repo)
+    if ((query is not None) and filter):
+        results = [
+            repo
+            for repo in data
+            if (query in repo["repo_name"])
+            or (query == str(repo["repo_group_id"]))
+            or (query in repo["rg_name"])
+        ]
         data = results
 
     # Determine the maximum number of pages which can be displayed from the data
     pages = math.ceil(len(data) / pagination_offset)
 
-    if page is not None:
-        page = int(page)
-    else:
-        page = 1
-
+    page = int(page) if page is not None else 1
     """ ----------
         Caller requested sorting of the data. The data is a list of dictionaries
         with numerous sortable elements, and the "sorting" parameter is assumed
@@ -284,7 +278,18 @@ def renderRepos(view, query, data, sorting = None, rev = False, page = None, fil
     x = pagination_offset * (page - 1)
     data = data[x: x + pagination_offset]
 
-    return render_module("repos-" + view, title="Repos", repos=data, query_key=query, activePage=page, pages=pages, offset=pagination_offset, PS=pageSource, reverse = rev, sorting = sorting)
+    return render_module(
+        f"repos-{view}",
+        title="Repos",
+        repos=data,
+        query_key=query,
+        activePage=page,
+        pages=pages,
+        offset=pagination_offset,
+        PS=pageSource,
+        reverse=rev,
+        sorting=sorting,
+    )
 
 """ ----------------------------------------------------------------
     Renders a simple page with the given message information, and optional page

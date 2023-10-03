@@ -19,7 +19,7 @@ platform_id = 1
 def collect_events(repo_git: str):
 
     logger = logging.getLogger(collect_events.__name__)
-    
+
     with GithubTaskManifest(logger) as manifest:
 
         augur_db = manifest.augur_db
@@ -36,10 +36,9 @@ def collect_events(repo_git: str):
 
             url = f"https://api.github.com/repos/{owner}/{repo}/issues/events"
 
-            event_data = retrieve_all_event_data(repo_git, logger, manifest.key_auth)
-
-            if event_data:
-            
+            if event_data := retrieve_all_event_data(
+                repo_git, logger, manifest.key_auth
+            ):
                 process_events(event_data, f"{owner}/{repo}: Event task", repo_id, logger, manifest.augur_db)
 
             else:
@@ -83,24 +82,16 @@ def process_events(events, task_name, repo_id, logger, augur_db):
     tool_source = "Github events task"
     tool_version = "2.0"
     data_source = "Github API"
-   
+
     pr_event_dicts = []
     issue_event_dicts = []
     contributors = []
 
 
-    # create mapping from issue url to issue id of current issues
-    issue_url_to_id_map = {}
     issues = augur_db.session.query(Issue).filter(Issue.repo_id == repo_id).all()
-    for issue in issues:
-        issue_url_to_id_map[issue.issue_url] = issue.issue_id
-
-    # create mapping from pr url to pr id of current pull requests
-    pr_url_to_id_map = {}
+    issue_url_to_id_map = {issue.issue_url: issue.issue_id for issue in issues}
     prs = augur_db.session.query(PullRequest).filter(PullRequest.repo_id == repo_id).all()
-    for pr in prs:
-        pr_url_to_id_map[pr.pr_url] = pr.pull_request_id
-
+    pr_url_to_id_map = {pr.pr_url: pr.pull_request_id for pr in prs}
     not_mapable_event_count = 0
     event_len = len(events)
     for event in events:
@@ -114,8 +105,7 @@ def process_events(events, task_name, repo_id, logger, augur_db):
             not_mapable_event_count += 1
             continue
 
-        pull_request = event_mapping_data.get('pull_request', None)
-        if pull_request:
+        if pull_request := event_mapping_data.get('pull_request', None):
             pr_url = pull_request["url"]
 
             try:
@@ -151,7 +141,7 @@ def process_events(events, task_name, repo_id, logger, augur_db):
                 extract_issue_event_data(event, issue_id, platform_id, repo_id,
                                         tool_source, tool_version, data_source)
             )
-        
+
         # add contributor to list after porcessing the event, 
         # so if it fails processing for some reason the contributor is not inserted
         # NOTE: contributor is none when there is no contributor data on the event

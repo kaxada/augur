@@ -32,9 +32,9 @@ def collect_pull_requests(repo_git: str) -> int:
         Repo.repo_git == repo_git).one().repo_id
 
         owner, repo = get_owner_repo(repo_git)
-        pr_data = retrieve_all_pr_data(repo_git, logger, manifest.key_auth)
-
-        if pr_data:
+        if pr_data := retrieve_all_pr_data(
+            repo_git, logger, manifest.key_auth
+        ):
             process_pull_requests(pr_data, f"{owner}/{repo}: Pr task", repo_id, logger, augur_db)
 
             return len(pr_data)
@@ -212,12 +212,10 @@ def collect_pull_request_review_comments(repo_git: str) -> None:
         query = augur_db.session.query(PullRequestReview).filter(PullRequestReview.repo_id == repo_id)
         pr_reviews = execute_session_query(query, 'all')
 
-        # maps the github pr_review id to the auto incrementing pk that augur stores as pr_review id
-        pr_review_id_mapping = {}
-        for review in pr_reviews:
-            pr_review_id_mapping[review.pr_review_src_id] = review.pr_review_id
-
-
+        pr_review_id_mapping = {
+            review.pr_review_src_id: review.pr_review_id
+            for review in pr_reviews
+        }
         tool_source = "Pr review comment task"
         tool_version = "2.0"
         data_source = "Github API"
@@ -242,7 +240,7 @@ def collect_pull_request_review_comments(repo_git: str) -> None:
 
         contributors = []
         for comment in all_raw_pr_review_messages:
-            
+
             _, contributor = process_github_comment_contributors(comment, tool_source, tool_version, data_source)
             if contributor is not None:
                 contributors.append(contributor)
@@ -354,7 +352,7 @@ def collect_pull_request_reviews(repo_git: str) -> None:
                     break
 
                 pr_reviews.extend(page_data)
-            
+
             if pr_reviews:
                 all_pr_reviews[pull_request_id] = pr_reviews
 
@@ -363,12 +361,11 @@ def collect_pull_request_reviews(repo_git: str) -> None:
             return
 
         contributors = []
-        for pull_request_id in all_pr_reviews.keys():
-
-            reviews = all_pr_reviews[pull_request_id]
+        for reviews in all_pr_reviews.values():
             for review in reviews:
-                contributor = process_pull_request_review_contributor(review, tool_source, tool_version, data_source)
-                if contributor:
+                if contributor := process_pull_request_review_contributor(
+                    review, tool_source, tool_version, data_source
+                ):
                     contributors.append(contributor)
 
         logger.info(f"{owner}/{repo} Pr reviews: Inserting {len(contributors)} contributors")
@@ -376,14 +373,21 @@ def collect_pull_request_reviews(repo_git: str) -> None:
 
 
         pr_reviews = []
-        for pull_request_id in all_pr_reviews.keys():
+        for pull_request_id in all_pr_reviews:
 
             reviews = all_pr_reviews[pull_request_id]
-            for review in reviews:
-                
-                if "cntrb_id" in review:
-                    pr_reviews.append(extract_needed_pr_review_data(review, pull_request_id, repo_id, platform_id, tool_source, tool_version))
-
+            pr_reviews.extend(
+                extract_needed_pr_review_data(
+                    review,
+                    pull_request_id,
+                    repo_id,
+                    platform_id,
+                    tool_source,
+                    tool_version,
+                )
+                for review in reviews
+                if "cntrb_id" in review
+            )
         logger.info(f"{owner}/{repo}: Inserting pr reviews of length: {len(pr_reviews)}")
         pr_review_natural_keys = ["pr_review_src_id",]
         augur_db.insert_data(pr_reviews, PullRequestReview, pr_review_natural_keys)

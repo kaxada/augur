@@ -160,7 +160,7 @@ def clustering_model(repo_git: str,logger,engine, session) -> None:
     feature_matrix_cur_repo = tfidf_transformer.transform(msg_df['msg_text'])
 
     prediction = kmeans_model.predict(feature_matrix_cur_repo)
-    logger.info("prediction: " + str(prediction[0]))
+    logger.info(f"prediction: {str(prediction[0])}")
 
     # inserting data
     record = {
@@ -177,7 +177,8 @@ def clustering_model(repo_git: str,logger,engine, session) -> None:
 
     # result = db.execute(repo_cluster_messages_table.insert().values(record))
     logging.info(
-        "Primary key inserted into the repo_cluster_messages table: {}".format(repo_cluster_messages_obj.msg_cluster_id))
+        f"Primary key inserted into the repo_cluster_messages table: {repo_cluster_messages_obj.msg_cluster_id}"
+    )
     try:
         logger.debug('pickling')
         lda_model = pickle.load(open("lda_model", "rb"))
@@ -219,7 +220,6 @@ def clustering_model(repo_git: str,logger,engine, session) -> None:
         logger.debug(f'error is: {e}.')
         stacker = traceback.format_exc()
         logger.debug(f"\n\n{stacker}\n\n")
-        pass
 
     # self.register_task_completion(task, repo_id, 'clustering')
 
@@ -247,8 +247,7 @@ def count_func(msg):
     counts = Counter(tag for word, tag in blobed.tags if
                      tag not in ['NNPS', 'RBS', 'SYM', 'WP$', 'LS', 'POS', 'RP', 'RBR', 'JJS', 'UH', 'FW', 'PDT'])
     total = sum(counts.values())
-    normalized_count = {key: value / total for key, value in counts.items()}
-    return normalized_count
+    return {key: value / total for key, value in counts.items()}
 
 def preprocess_and_tokenize(text):
     text = text.lower()
@@ -257,14 +256,15 @@ def preprocess_and_tokenize(text):
 
     tokens = nltk.word_tokenize(text)
     tokens = [token for token in tokens if len(token) > 1]
-    stems = [stemmer.stem(t) for t in tokens]
-    return stems
+    return [stemmer.stem(t) for t in tokens]
 
 def train_model(logger, engine, session, max_df, min_df, max_features, ngram_range, num_clusters, num_topics, num_words_per_topic, tool_source, tool_version, data_source):
     def visualize_labels_PCA(features, labels, annotations, num_components, title):
         labels_color_map = {-1: "red"}
         for label in labels:
-            labels_color_map[label] = [list([x / 255.0 for x in list(np.random.choice(range(256), size=3))])]
+            labels_color_map[label] = [
+                [x / 255.0 for x in list(np.random.choice(range(256), size=3))]
+            ]
         low_dim_data = PCA(n_components=num_components).fit_transform(features)
 
         fig, ax = plt.subplots(figsize=(20, 10))
@@ -410,7 +410,7 @@ def train_model(logger, engine, session, max_df, min_df, max_features, ngram_ran
         topic_model_dict = {}
         topic_model_dict['repo_id'] = msg_df.loc[i]['repo_id']
         for i, prob in enumerate(prob_vector):
-            topic_model_dict["topic" + str(i + 1)] = prob
+            topic_model_dict[f"topic{str(i + 1)}"] = prob
         topic_model_dict_list.append(topic_model_dict)
     logger.debug('creating topic model data frame.')
     topic_model_df = pd.DataFrame(topic_model_dict_list)
@@ -426,7 +426,6 @@ def train_model(logger, engine, session, max_df, min_df, max_features, ngram_ran
         logger.debug(f'POS_count_dict error is: {e}.')
         stacker = traceback.format_exc()
         logger.debug(f"\n\n{stacker}\n\n")
-        pass
     try:
         msg_df_aug = pd.concat([msg_df, pd.DataFrame.from_records(POS_count_dict)], axis=1)
         logger.info(f'msg_df_aug worked: {msg_df_aug}')
@@ -434,8 +433,6 @@ def train_model(logger, engine, session, max_df, min_df, max_features, ngram_ran
         logger.debug(f'msg_df_aug error is: {e}.')
         stacker = traceback.format_exc()
         logger.debug(f"\n\n{stacker}\n\n")
-        pass
-
     visualize_labels_PCA(tfidf_matrix.todense(), msg_df['cluster'], msg_df['repo_id'], 2, "tex!")
 
 # visualize_labels_PCA(tfidf_matrix.todense(), msg_df['cluster'], msg_df['repo_id'], 2, "MIN_DF={} and MAX_DF={} and NGRAM_RANGE={}".format(MIN_DF, MAX_DF, NGRAM_RANGE))
